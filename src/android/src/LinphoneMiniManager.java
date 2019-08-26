@@ -48,6 +48,7 @@ import org.linphone.core.Friend;
 import org.linphone.core.FriendList;
 import org.linphone.core.GlobalState;
 import org.linphone.core.InfoMessage;
+import org.linphone.core.NatPolicy;
 import org.linphone.core.PresenceModel;
 import org.linphone.core.ProxyConfig;
 import org.linphone.core.PublishState;
@@ -204,7 +205,7 @@ public class LinphoneMiniManager implements CoreListener {
 
         if(mCore.isNetworkReachable()) {
 			CallParams params = mCore.createCallParams(mCore.getCurrentCall());
-			params.enableVideo(false);
+			params.enableVideo(true);
 			mCore.inviteAddressWithParams(lAddress, params);
         } else {
             Log.e(new Object[]{"Error: Network unreachable"});
@@ -274,11 +275,28 @@ public class LinphoneMiniManager implements CoreListener {
 		mCallbackContext = callbackContext;
 	}
 
+	public void setStunServer(String stunServer, CallbackContext callbackContext) {
+		mCallbackContext = callbackContext;
+		NatPolicy policy = mLinphoneCore.getNatPolicy();
+		policy.setStunServer(stunServer);
+		policy.enableStun(true);
+		mLinphoneCore.setNatPolicy(policy);
+	}
+
+	public void disableStunServer(CallbackContext callbackContext) {
+		mCallbackContext = callbackContext;
+		NatPolicy policy = mLinphoneCore.getNatPolicy();
+		policy.enableStun(false);
+		mLinphoneCore.setNatPolicy(policy);
+	}
+
 	public void acceptCall(CallbackContext callbackContext) {
 		mCallbackContext = callbackContext;
         Call call = mCore.getCurrentCall();
 		if(call != null){
-			call.accept();
+			CallParams params = call.getParams();
+			params.enableVideo(true);
+			mCore.acceptCallWithParams(call, params);
 		}
 
 	}

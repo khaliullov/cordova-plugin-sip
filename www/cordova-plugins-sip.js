@@ -36,6 +36,24 @@ module.exports =
                 []
             );
     },
+    setStunServer: function (stunServer, successCallback, errorCallback) {
+        cordova.exec(
+            successCallback,
+            errorCallback,
+            "Linphone",
+            "setStunServer",
+            [stunServer]
+        );
+    },
+    disableStunServer: function (successCallback, errorCallback) {
+        cordova.exec(
+            successCallback,
+            errorCallback,
+            "Linphone",
+            "disableStunServer",
+            []
+        );
+    },
     call: function (address, displayName, successCallback, errorCallback) {
         cordova.exec(
             successCallback,

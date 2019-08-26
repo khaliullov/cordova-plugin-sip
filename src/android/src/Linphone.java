@@ -64,6 +64,12 @@ public class Linphone extends CordovaPlugin  {
             case "acceptCall":
                 acceptCall(args.getString(0), callbackContext);
                 return true;
+            case "disableStunServer":
+                disableStunServer(callbackContext);
+                return true;
+            case "setStunServer":
+                setStunServer(args.getString(0), callbackContext);
+                return true;
             case "videocall":
                 videocall(args.getString(0), args.getString(1), callbackContext);
                 return true;
@@ -133,10 +139,23 @@ public class Linphone extends CordovaPlugin  {
         mLinphoneManager.listenCall(callbackContext);
     }
 
+    public static synchronized void setStunServer(final String stunServer, final CallbackContext callbackContext){
+        mLinphoneManager.setStunServer(stunServer, callbackContext);
+    }
+
+    public static synchronized void disableStunServer(final CallbackContext callbackContext){
+        mLinphoneManager.disableStunServer(callbackContext);
+    }
+
     public static synchronized void acceptCall( final String isAcceptCall, final CallbackContext callbackContext){
-        if("true".equals(isAcceptCall))
+        if("true".equals(isAcceptCall)) {
             mLinphoneManager.acceptCall(callbackContext);
-        else
+            Intent intent = new Intent(mContext, LinphoneMiniActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.putExtra("address", "");
+            intent.putExtra("displayName", "");
+            mContext.startActivity(intent);
+        } else
             mLinphoneManager.terminateCall();
     }
 
