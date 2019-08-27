@@ -285,8 +285,8 @@ public class LinphoneMiniManager implements CoreListener {
 			mProxyConfig.setNatPolicy(natPolicy);
 		}
 		if (natPolicy != null) {
-			policy.setStunServer(stunServer);
-			policy.enableStun(true);
+			natPolicy.setStunServer(stunServer);
+			natPolicy.enableStun(true);
 		}
 		mProxyConfig.done();
 	}
@@ -301,7 +301,7 @@ public class LinphoneMiniManager implements CoreListener {
 			mProxyConfig.setNatPolicy(natPolicy);
 		}
 		if (natPolicy != null) {
-			policy.enableStun(false);
+			natPolicy.enableStun(false);
 		}
 		mProxyConfig.done();
 	}
