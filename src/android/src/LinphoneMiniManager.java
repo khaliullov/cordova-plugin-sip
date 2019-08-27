@@ -277,17 +277,33 @@ public class LinphoneMiniManager implements CoreListener {
 
 	public void setStunServer(String stunServer, CallbackContext callbackContext) {
 		mCallbackContext = callbackContext;
-		NatPolicy policy = mLinphoneCore.getNatPolicy();
-		policy.setStunServer(stunServer);
-		policy.enableStun(true);
-		mLinphoneCore.setNatPolicy(policy);
+		ProxyConfig mProxyConfig = mCore.getDefaultProxyConfig();
+		mProxyConfig.edit();
+		NatPolicy natPolicy = mProxyConfig.getNatPolicy();
+		if (natPolicy == null) {
+			natPolicy = mCore.createNatPolicy();
+			mProxyConfig.setNatPolicy(natPolicy);
+		}
+		if (natPolicy != null) {
+			policy.setStunServer(stunServer);
+			policy.enableStun(true);
+		}
+		mProxyConfig.done();
 	}
 
 	public void disableStunServer(CallbackContext callbackContext) {
 		mCallbackContext = callbackContext;
-		NatPolicy policy = mLinphoneCore.getNatPolicy();
-		policy.enableStun(false);
-		mLinphoneCore.setNatPolicy(policy);
+		ProxyConfig mProxyConfig = mCore.getDefaultProxyConfig();
+		mProxyConfig.edit();
+		NatPolicy natPolicy = mProxyConfig.getNatPolicy();
+		if (natPolicy == null) {
+			natPolicy = mCore.createNatPolicy();
+			mProxyConfig.setNatPolicy(natPolicy);
+		}
+		if (natPolicy != null) {
+			policy.enableStun(false);
+		}
+		mProxyConfig.done();
 	}
 
 	public void acceptCall(CallbackContext callbackContext) {
