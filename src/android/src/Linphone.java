@@ -149,12 +149,13 @@ public class Linphone extends CordovaPlugin  {
 
     public static synchronized void acceptCall( final String isAcceptCall, final CallbackContext callbackContext){
         if("true".equals(isAcceptCall)) {
-            mLinphoneManager.acceptCall(callbackContext);
             Intent intent = new Intent(mContext, LinphoneMiniActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            intent.putExtra("address", "");
-            intent.putExtra("displayName", "");
+            //intent.putExtra("address", "");
+            //intent.putExtra("displayName", "");
             mContext.startActivity(intent);
+            mLinphoneManager.acceptCall(callbackContext);
+            callbackContext.success();
         } else
             mLinphoneManager.terminateCall();
     }
@@ -164,9 +165,10 @@ public class Linphone extends CordovaPlugin  {
             Log.d("incall", address, displayName);
             Intent intent = new Intent(mContext, LinphoneMiniActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            intent.putExtra("address", address);
-            intent.putExtra("displayName", displayName);
+            //intent.putExtra("address", address);
+            //intent.putExtra("displayName", displayName);
             mContext.startActivity(intent);
+            mLinphoneManager.newOutgoingCall(address, displayName);
             Log.d("incall sukses");
             callbackContext.success();
         }catch (Exception e){

@@ -79,17 +79,26 @@ public class LinphoneMiniManager implements CoreListener {
 	public CallbackContext mCallbackContext;
 	public CallbackContext mLoginCallbackContext;
 
+	public void onMessageSent(Core core, ChatRoom chatRoom, ChatMessage chatMessage) {
+
+	}
+
+	public void onChatRoomRead(Core core, ChatRoom chatRoom) {
+
+	}
+
 	public LinphoneMiniManager(Context c) {
 		mContext = c;
 		Factory.instance().setDebugMode(true, "Linphone Mini");
         //mPrefs = LinphonePreferences.instance();
-
 
 		try {
 
 			String basePath = mContext.getFilesDir().getAbsolutePath();
 			copyAssetsFromPackage(basePath);
 			mCore = Factory.instance().createCore(basePath + "/.linphonerc", basePath + "/linphonerc", mContext);
+			mCore.addListener(this);
+			mCore.start();
 			initCoreValues(basePath);
 
 			setUserAgent();
@@ -97,9 +106,10 @@ public class LinphoneMiniManager implements CoreListener {
 			startIterate();
 			mInstance = this;
 			mCore.setNetworkReachable(true); // Let's assume it's true
-			mCore.addListener(this);
 			mCaptureView = new SurfaceView(mContext);
-		} catch (IOException e) {
+			mCore.clearAllAuthInfo();
+			mCore.clearProxyConfig();
+        } catch (IOException e) {
 			Log.e(new Object[]{"Error initializing Linphone",e.getMessage()});
 
 		}
@@ -268,9 +278,6 @@ public class LinphoneMiniManager implements CoreListener {
 		}
 	}
 
-
-
-
 	public void listenCall(CallbackContext callbackContext){
 		mCallbackContext = callbackContext;
 	}
@@ -314,7 +321,6 @@ public class LinphoneMiniManager implements CoreListener {
 			params.enableVideo(true);
 			mCore.acceptCallWithParams(call, params);
 		}
-
 	}
 
 	public void call(String address, String displayName, CallbackContext callbackContext) {
@@ -328,16 +334,18 @@ public class LinphoneMiniManager implements CoreListener {
 	}
 
 	public void login(String username, String password, String domain, CallbackContext callbackContext) {
+		mLoginCallbackContext = callbackContext;
 		Factory lcFactory = Factory.instance();
 
+		mCore.clearAllAuthInfo();
+		mCore.clearProxyConfig();
 
 		Address address = lcFactory.createAddress("sip:" + username + "@" + domain);
 		username = address.getUsername();
 		domain = address.getDomain();
 		if(password != null) {
-			mCore.addAuthInfo(lcFactory.createAuthInfo(username, (String)null ,password, (String)null, domain, domain));
+			mCore.addAuthInfo(lcFactory.createAuthInfo(username, username, password, (String)null, (String)null, domain));
 		}
-
 
 //			ProxyConfig proxyCfg = mCore.createProxyConfig("sip:" + username + "@" + domain, domain, (String)null, true);
 		ProxyConfig proxyCfg = mCore.createProxyConfig();
@@ -351,14 +359,6 @@ public class LinphoneMiniManager implements CoreListener {
 		proxyCfg.enableRegister(true);
 		mCore.addProxyConfig(proxyCfg);
 		mCore.setDefaultProxyConfig(proxyCfg);
-
-
-
-
-		mLoginCallbackContext = callbackContext;
-
-
-
 	}
 
 	@Override

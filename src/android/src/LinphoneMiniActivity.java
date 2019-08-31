@@ -94,12 +94,14 @@ public class LinphoneMiniActivity extends Activity {
 
         Intent i = getIntent();
         Bundle extras = i.getExtras();
-        String address = extras.getString("address");
-        String displayName = extras.getString("displayName");
+        //String address = extras.getString("address");
+        //String displayName = extras.getString("displayName");
 
         String videoDeviceId = Linphone.mLinphoneCore.getVideoDevice();
         Linphone.mLinphoneCore.setVideoDevice(videoDeviceId);
-        Linphone.mLinphoneManager.newOutgoingCall(address, displayName);
+        //if (address != "") {
+        //    Linphone.mLinphoneManager.newOutgoingCall(address, displayName);
+        //}
 	}
 
     private void fixZOrder(SurfaceView video, SurfaceView preview) {
