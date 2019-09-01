@@ -190,8 +190,6 @@ public class LinphoneMiniManager implements CoreListener {
 		LinphoneMiniUtils.copyFromPackage(mContext, resources.getIdentifier("linphonerc_factory", "raw", package_name), new File(basePath + "/linphonerc").getName());
 		LinphoneMiniUtils.copyIfNotExist(mContext, resources.getIdentifier("lpconfig", "raw", package_name), basePath + "/lpconfig.xsd");
 		LinphoneMiniUtils.copyIfNotExist(mContext, resources.getIdentifier("rootca", "raw", package_name), basePath + "/rootca.pem");
-		LinphoneMiniUtils.copyIfNotExist(mContext, resources.getIdentifier("vcard_grammar", "raw", package_name), basePath + "/vcard_grammar.pem");
-		LinphoneMiniUtils.copyIfNotExist(mContext, resources.getIdentifier("cpim_grammar", "raw", package_name), basePath + "/cpim_grammar.pem");
 	}
 
 	private void initCoreValues(String basePath) {
