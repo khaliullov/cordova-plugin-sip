@@ -35,13 +35,13 @@ import org.linphone.mediastream.video.AndroidVideoWindowImpl;
  * @author Sylvain Berfini
  */
 public class LinphoneMiniActivity extends Activity {
-	private SurfaceView mVideoView;
-	private SurfaceView mCaptureView;
-	private AndroidVideoWindowImpl androidVideoWindowImpl;
+    private SurfaceView mVideoView;
+    private SurfaceView mCaptureView;
+    private AndroidVideoWindowImpl androidVideoWindowImpl;
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+	super.onCreate(savedInstanceState);
 
         Resources R = getApplication().getResources();
         String packageName = getApplication().getPackageName();
@@ -94,15 +94,15 @@ public class LinphoneMiniActivity extends Activity {
 
         Intent i = getIntent();
         Bundle extras = i.getExtras();
-        //String address = extras.getString("address");
-        //String displayName = extras.getString("displayName");
+        String address = extras.getString("address");
+        String displayName = extras.getString("displayName");
 
         String videoDeviceId = Linphone.mLinphoneCore.getVideoDevice();
         Linphone.mLinphoneCore.setVideoDevice(videoDeviceId);
         //if (address != "") {
-        //    Linphone.mLinphoneManager.newOutgoingCall(address, displayName);
+            // Linphone.mLinphoneManager.newOutgoingCall(address, displayName);
         //}
-	}
+    }
 
     private void fixZOrder(SurfaceView video, SurfaceView preview) {
         video.setZOrderOnTop(false);
@@ -127,9 +127,9 @@ public class LinphoneMiniActivity extends Activity {
 //        }
 //    }
 
-	@Override
-	protected void onResume() {
-		super.onResume();
+    @Override
+    protected void onResume() {
+	super.onResume();
 
         if (mVideoView != null) {
             ((GLSurfaceView) mVideoView).onResume();
@@ -149,14 +149,14 @@ public class LinphoneMiniActivity extends Activity {
 
     }
 
-	@Override
-	protected void onPause() {
+    @Override
+    protected void onPause() {
         if (androidVideoWindowImpl != null) {
             synchronized (androidVideoWindowImpl) {
-				/*
-				 * this call will destroy native opengl renderer which is used by
-				 * androidVideoWindowImpl
-				 */
+		/*
+		 * this call will destroy native opengl renderer which is used by
+		 * androidVideoWindowImpl
+		 */
                 Core lc = Linphone.mLinphoneCore;
                 if (lc != null) {
                     Call c = lc.getCurrentCall();
@@ -171,11 +171,11 @@ public class LinphoneMiniActivity extends Activity {
             ((GLSurfaceView) mVideoView).onPause();
         }
 
-		super.onPause();
-	}
+	super.onPause();
+    }
 
-	@Override
-	protected void onDestroy() {
+    @Override
+    protected void onDestroy() {
         mCaptureView = null;
         if (mVideoView != null) {
             mVideoView.setOnTouchListener(null);
@@ -187,6 +187,6 @@ public class LinphoneMiniActivity extends Activity {
             androidVideoWindowImpl = null;
         }
 
-		super.onDestroy();
-	}
+	super.onDestroy();
+    }
 }

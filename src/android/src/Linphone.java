@@ -151,8 +151,8 @@ public class Linphone extends CordovaPlugin  {
         if("true".equals(isAcceptCall)) {
             Intent intent = new Intent(mContext, LinphoneMiniActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            //intent.putExtra("address", "");
-            //intent.putExtra("displayName", "");
+            intent.putExtra("address", "");
+            intent.putExtra("displayName", "");
             mContext.startActivity(intent);
             mLinphoneManager.acceptCall(callbackContext);
             callbackContext.success();
@@ -163,12 +163,12 @@ public class Linphone extends CordovaPlugin  {
     public static synchronized void videocall(final String address, final String displayName, final CallbackContext callbackContext) {
         try{
             Log.d("incall", address, displayName);
+            mLinphoneManager.newOutgoingCall(address, displayName);
             Intent intent = new Intent(mContext, LinphoneMiniActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            //intent.putExtra("address", address);
-            //intent.putExtra("displayName", displayName);
+            intent.putExtra("address", address);
+            intent.putExtra("displayName", displayName);
             mContext.startActivity(intent);
-            mLinphoneManager.newOutgoingCall(address, displayName);
             Log.d("incall sukses");
             callbackContext.success();
         }catch (Exception e){
