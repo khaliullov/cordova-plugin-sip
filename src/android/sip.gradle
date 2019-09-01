@@ -1,0 +1,9 @@
+repositories {
+    flatDir {
+        dirs 'libs'
+    }
+}
+
+dependencies {
+    implementation(name:'linphone-sdk-android-4.2-120-g054b910', ext:'aar')
+}
