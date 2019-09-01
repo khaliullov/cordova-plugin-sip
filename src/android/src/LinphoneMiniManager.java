@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 import android.content.Context;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
+import android.media.AudioManager;
 import android.view.SurfaceView;
 
 import org.apache.cordova.CallbackContext;
@@ -78,6 +79,7 @@ public class LinphoneMiniManager implements CoreListener {
 	public static SurfaceView mCaptureView;
 	public CallbackContext mCallbackContext;
 	public CallbackContext mLoginCallbackContext;
+	private AudioManager mAudioManager;
 
 	public void onMessageSent(Core core, ChatRoom chatRoom, ChatMessage chatMessage) {
 
@@ -109,6 +111,8 @@ public class LinphoneMiniManager implements CoreListener {
 			mCaptureView = new SurfaceView(mContext);
 			mCore.clearAllAuthInfo();
 			mCore.clearProxyConfig();
+			mAudioManager = ((AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE));
+			mAudioManager.setSpeakerphoneOn(true);
         } catch (IOException e) {
 			Log.e(new Object[]{"Error initializing Linphone",e.getMessage()});
 
