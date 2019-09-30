@@ -25,9 +25,15 @@ import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.widget.RelativeLayout;
+import android.graphics.Color;
+import android.view.View;
+import android.content.pm.ActivityInfo;
 
 import org.linphone.core.Call;
 import org.linphone.core.Core;
+import org.linphone.core.CallParams;
+
 import org.linphone.mediastream.Log;
 import org.linphone.mediastream.video.AndroidVideoWindowImpl;
 
@@ -41,15 +47,22 @@ public class LinphoneMiniActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-	super.onCreate(savedInstanceState);
+	    super.onCreate(savedInstanceState);
 
         Resources R = getApplication().getResources();
         String packageName = getApplication().getPackageName();
 
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+
         setContentView(R.getIdentifier("incall", "layout", packageName));
 
+        RelativeLayout bgElement = findViewById(R.getIdentifier("topLayout", "id", packageName));
+        bgElement.setBackgroundColor(Color.WHITE);
+
         mVideoView = findViewById(R.getIdentifier("videoSurface", "id", packageName));
+
         mCaptureView = findViewById(R.getIdentifier("videoCaptureSurface", "id", packageName));
+        mCaptureView.setVisibility(View.INVISIBLE);
         mCaptureView.getHolder().setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
         fixZOrder(mVideoView, mCaptureView);
@@ -127,9 +140,25 @@ public class LinphoneMiniActivity extends Activity {
 //        }
 //    }
 
+    public void butAnswer(View v) {
+        Core lc = Linphone.mLinphoneCore;
+        if (lc != null) {
+            Call call = lc.getCurrentCall();
+            if (call != null) {
+                CallParams params = call.getParams();
+                params.enableVideo(true);
+                lc.acceptCallWithParams(call, params);
+            }
+        }
+    }
+
+    public void rejectAnswer(View v) {
+        onBackPressed();
+    }
+
     @Override
     protected void onResume() {
-	super.onResume();
+	    super.onResume();
 
         if (mVideoView != null) {
             ((GLSurfaceView) mVideoView).onResume();
@@ -171,22 +200,40 @@ public class LinphoneMiniActivity extends Activity {
             ((GLSurfaceView) mVideoView).onPause();
         }
 
-	super.onPause();
+	    super.onPause();
+    }
+
+    @Override
+    public void onBackPressed() {
+        Core lc = Linphone.mLinphoneCore;
+
+        if (lc != null) {
+
+            Call c = lc.getCurrentCall();
+
+            if (c != null){
+                c.terminate();
+            }
+        }
+
+        super.onBackPressed();
     }
 
     @Override
     protected void onDestroy() {
         mCaptureView = null;
+
         if (mVideoView != null) {
             mVideoView.setOnTouchListener(null);
             mVideoView = null;
         }
+
         if (androidVideoWindowImpl != null) {
             // Prevent linphone from crashing if correspondent hang up while you are rotating
             androidVideoWindowImpl.release();
             androidVideoWindowImpl = null;
         }
 
-	super.onDestroy();
+	    super.onDestroy();
     }
 }

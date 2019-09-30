@@ -3,19 +3,65 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/topLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#ffffff">
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:text="Домофон"
+        android:layout_margin="25dp"
+        android:textSize="26dp"
+        android:textColor="#333" >
+    </TextView>
 
     <org.linphone.mediastream.video.display.GL2JNIView
-        android:visibility="visible"
-        android:layout_height="match_parent"
-        android:layout_width="match_parent"
-        android:id="@+id/videoSurface" />
+        android:id="@+id/videoSurface"
+        android:layout_width="300dp"
+        android:layout_height="236dp"
+        android:layout_below ="@+id/title"
+        android:layout_marginTop="25dp"
+        android:layout_centerHorizontal="true" />
 
     <SurfaceView
         android:id="@+id/videoCaptureSurface"
-        android:layout_width="120dp"
-        android:layout_height="145dp"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_below ="@+id/videoSurface"
+        android:layout_centerHorizontal="true" />
+
+    <Button android:id="@+id/answerButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toLeftOf="@+id/unlockButton"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true" />
+        android:layout_marginBottom="80dp"
+        android:padding="25dp"
+        android:text="Ответить"
+        android:onClick="butAnswer"/>
+
+    <Button
+        android:id="@+id/unlockButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerInParent="true"
+        android:layout_marginBottom="80dp"
+        android:padding="25dp"
+        android:text="Открыть" />
+
+    <Button android:id="@+id/rejectButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_alignParentBottom="true"
+        android:layout_toRightOf="@+id/unlockButton"
+        android:layout_marginBottom="80dp"
+        android:padding="25dp"
+        android:text="Сбросить"
+        android:onClick="rejectAnswer"/>
 
 </RelativeLayout>

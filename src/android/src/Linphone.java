@@ -154,7 +154,7 @@ public class Linphone extends CordovaPlugin  {
             intent.putExtra("address", "");
             intent.putExtra("displayName", "");
             mContext.startActivity(intent);
-            mLinphoneManager.acceptCall(callbackContext);
+            mLinphoneManager.previewCall(callbackContext);
             callbackContext.success();
         } else
             mLinphoneManager.terminateCall();

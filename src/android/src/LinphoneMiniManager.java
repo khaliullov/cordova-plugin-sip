@@ -316,11 +316,21 @@ public class LinphoneMiniManager implements CoreListener {
 
 	public void acceptCall(CallbackContext callbackContext) {
 		mCallbackContext = callbackContext;
-        Call call = mCore.getCurrentCall();
-		if(call != null){
+		Call call = mCore.getCurrentCall();
+		if (call != null){
 			CallParams params = call.getParams();
 			params.enableVideo(true);
 			mCore.acceptCallWithParams(call, params);
+		}
+	}
+
+	public void previewCall(CallbackContext callbackContext) {
+		mCallbackContext = callbackContext;
+		Call call = mCore.getCurrentCall();
+		if (call != null){
+			CallParams params = call.getParams();
+			params.enableVideo(true);
+			mCore.acceptEarlyMediaWithParams(call, params);
 		}
 	}
 
