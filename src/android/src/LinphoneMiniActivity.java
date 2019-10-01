@@ -115,6 +115,9 @@ public class LinphoneMiniActivity extends Activity {
         //if (address != "") {
             // Linphone.mLinphoneManager.newOutgoingCall(address, displayName);
         //}
+
+        LinphoneMiniManager.getInstance().callActivity = this;
+
     }
 
     private void fixZOrder(SurfaceView video, SurfaceView preview) {
@@ -233,6 +236,8 @@ public class LinphoneMiniActivity extends Activity {
             androidVideoWindowImpl.release();
             androidVideoWindowImpl = null;
         }
+
+        LinphoneMiniManager.getInstance().callActivity = null;
 
 	    super.onDestroy();
     }

@@ -19,8 +19,8 @@
 
     <org.linphone.mediastream.video.display.GL2JNIView
         android:id="@+id/videoSurface"
-        android:layout_width="300dp"
-        android:layout_height="236dp"
+        android:layout_width="310dp"
+        android:layout_height="254dp"
         android:layout_below ="@+id/title"
         android:layout_marginTop="25dp"
         android:layout_centerHorizontal="true" />

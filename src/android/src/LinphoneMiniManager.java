@@ -18,6 +18,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
@@ -80,6 +81,7 @@ public class LinphoneMiniManager implements CoreListener {
 	public CallbackContext mCallbackContext;
 	public CallbackContext mLoginCallbackContext;
 	private AudioManager mAudioManager;
+	public Activity callActivity;
 
 	public void onMessageSent(Core core, ChatRoom chatRoom, ChatMessage chatMessage) {
 
@@ -405,10 +407,18 @@ public class LinphoneMiniManager implements CoreListener {
 		else if(state == State.End)
 		{
 			mCallbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK,"End"));
+
+			if (callActivity != null) {
+				callActivity.finish();
+			}
 		}
 		else if(state == State.Error)
 		{
 			mCallbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK,"Error"));
+
+			if (callActivity != null) {
+				callActivity.finish();
+			}
 		}
 		Log.d("Call state: " + state + "(" + s + ")");
 

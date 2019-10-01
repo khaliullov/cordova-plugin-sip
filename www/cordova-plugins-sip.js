@@ -1,5 +1,14 @@
 module.exports =
 {
+    finish: function (successCallback, errorCallback) {
+        cordova.exec(
+            successCallback,
+            errorCallback,
+            "Linphone",
+            "finish",
+            []
+        );
+    },
     login: function (username, password, domain, successCallback, errorCallback) {
         cordova.exec(
             successCallback,
