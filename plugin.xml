@@ -44,6 +44,14 @@
     <source-file src="src/android/res/raw/rootca.pem" target-dir="res/raw" />
     <source-file src="src/android/res/raw/oldphone_mono.wav" target-dir="res/raw" />
 
+    <!-- drawable src/android/resources -->
+    <resource-file src="src/android/res/drawable/video_overlay.png" target="res/drawable/video_overlay.png" />
+    <resource-file src="src/android/res/drawable/btn_open.xml" target="res/drawable/btn_open.xml" />
+    <resource-file src="src/android/res/drawable/btn_answer.xml" target="res/drawable/btn_answer.xml" />
+    <resource-file src="src/android/res/drawable/btn_reject.xml" target="res/drawable/btn_reject.xml" />
+    <resource-file src="src/android/res/drawable/btn.png" target="res/drawable/btn.png" />
+    <resource-file src="src/android/res/drawable/round_button.xml" target="res/drawable/round_button.xml" />
+
     <js-module src="www/cordova-plugins-sip.js" name="linphone">
       <merges target="cordova.plugins.sip" />
     </js-module>

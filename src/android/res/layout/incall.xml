@@ -42,44 +42,44 @@
         android:layout_centerHorizontal="true" />
 
     <Button android:id="@+id/rejectButton"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
         android:layout_centerVertical="true"
         android:layout_alignParentBottom="true"
         android:layout_toLeftOf="@+id/unlockButton"
         android:layout_marginBottom="100dp"
-        android:layout_marginRight="5dp"
+        android:layout_marginRight="20dp"
         android:onClick="rejectAnswer"
-        android:stateListAnimator="@null"
-        android:paddingLeft="39dp"
+        android:elevation="6dp"
+        android:paddingLeft="29dp"
         android:drawableStart="@drawable/btn_reject"
-        android:background="@drawable/btn" />
+        android:background="@drawable/round_button" />
 
     <Button
         android:id="@+id/unlockButton"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
         android:layout_alignParentBottom="true"
         android:layout_centerInParent="true"
         android:layout_marginBottom="100dp"
-        android:paddingLeft="40dp"
-        android:stateListAnimator="@null"
+        android:paddingLeft="30dp"
+        android:elevation="6dp"
         android:drawableStart="@drawable/btn_open"
-        android:background="@drawable/btn" />
+        android:background="@drawable/round_button" />
 
     <Button android:id="@+id/answerButton"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
         android:layout_centerVertical="true"
         android:layout_toRightOf="@+id/unlockButton"
         android:layout_alignParentBottom="true"
         android:layout_marginBottom="100dp"
-        android:layout_marginLeft="5dp"
+        android:layout_marginLeft="20dp"
         android:onClick="butAnswer"
-        android:paddingLeft="40dp"
-        android:stateListAnimator="@null"
+        android:elevation="6dp"
+        android:paddingLeft="30dp"
         android:drawableStart="@drawable/btn_answer"
-        android:background="@drawable/btn" />
+        android:background="@drawable/round_button" />
 
     <TextView
         android:id="@+id/rejectText"
@@ -88,12 +88,11 @@
         android:layout_centerVertical="true"
         android:layout_alignParentBottom="true"
         android:layout_toLeftOf="@+id/unlockText"
-        android:layout_marginBottom="80dp"
-        android:layout_marginRight="5dp"
+        android:layout_marginBottom="70dp"
         android:textAlignment="center"
         android:text="Отклонить"
         android:textSize="14dp"
-        android:textColor="#555555" >
+        android:textColor="#999999" >
     </TextView>
 
     <TextView
@@ -102,27 +101,25 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerInParent="true"
-        android:layout_marginBottom="80dp"
+        android:layout_marginBottom="70dp"
         android:textAlignment="center"
         android:text="Открыть"
         android:textSize="14dp"
-        android:textColor="#555555" >
+        android:textColor="#999999" >
     </TextView>
-
 
     <TextView
         android:id="@+id/answerText"
         android:layout_width="100dp"
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
-        android:layout_toRightOf="@+id/unlockButton"
+        android:layout_toRightOf="@+id/unlockText"
         android:layout_alignParentBottom="true"
-        android:layout_marginBottom="80dp"
-        android:layout_marginLeft="5dp"
+        android:layout_marginBottom="70dp"
         android:textAlignment="center"
         android:text="Ответить"
         android:textSize="14dp"
-        android:textColor="#555555" >
+        android:textColor="#999999" >
     </TextView>
 
 </RelativeLayout>

@@ -29,6 +29,7 @@ import android.widget.RelativeLayout;
 import android.graphics.Color;
 import android.view.View;
 import android.content.pm.ActivityInfo;
+import android.widget.Button;
 
 import org.linphone.core.Call;
 import org.linphone.core.Core;
@@ -44,6 +45,7 @@ public class LinphoneMiniActivity extends Activity {
     private SurfaceView mVideoView;
     private SurfaceView mCaptureView;
     private AndroidVideoWindowImpl androidVideoWindowImpl;
+    private Button answerButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +60,8 @@ public class LinphoneMiniActivity extends Activity {
 
         RelativeLayout bgElement = findViewById(R.getIdentifier("topLayout", "id", packageName));
         bgElement.setBackgroundColor(Color.WHITE);
+
+        answerButton = findViewById(R.getIdentifier("answerButton", "id", packageName));
 
         mVideoView = findViewById(R.getIdentifier("videoSurface", "id", packageName));
 
@@ -151,6 +155,9 @@ public class LinphoneMiniActivity extends Activity {
                 CallParams params = call.getParams();
                 params.enableVideo(true);
                 lc.acceptCallWithParams(call, params);
+
+                answerButton.setEnabled(false);
+
             }
         }
     }
