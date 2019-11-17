@@ -117,7 +117,6 @@ public class LinphoneMiniManager implements CoreListener {
 			mAudioManager.setSpeakerphoneOn(true);
         } catch (IOException e) {
 			Log.e(new Object[]{"Error initializing Linphone",e.getMessage()});
-
 		}
 	}
 
@@ -226,6 +225,68 @@ public class LinphoneMiniManager implements CoreListener {
 
     }
 
+	public void setPushNotification(String appId, String regId) {
+		Core core = getLc();
+		if (core == null) {
+			return;
+		}
+
+		if (regId != "") {
+			// Add push infos to exisiting proxy configs
+			if (core.getProxyConfigList().length > 0) {
+				for (ProxyConfig lpc : core.getProxyConfigList()) {
+					if (lpc == null) continue;
+					if (!lpc.isPushNotificationAllowed()) {
+						lpc.edit();
+						lpc.setContactUriParameters(null);
+						lpc.done();
+						if (lpc.getIdentityAddress() != null)
+							Log.d(
+									"[Push Notification] infos removed from proxy config "
+											+ lpc.getIdentityAddress().asStringUriOnly());
+					} else {
+						String contactInfos =
+								"app-id="
+										+ appId
+										+ ";pn-type=firebase"
+										+ ";pn-timeout=0"
+										+ ";pn-tok="
+										+ regId
+										+ ";pn-silent=1";
+						String prevContactParams = lpc.getContactParameters();
+						if (prevContactParams == null
+								|| prevContactParams.compareTo(contactInfos) != 0) {
+							lpc.edit();
+							lpc.setContactUriParameters(contactInfos);
+							lpc.done();
+							if (lpc.getIdentityAddress() != null)
+								Log.d(
+										"[Push Notification] infos added to proxy config "
+												+ lpc.getIdentityAddress().asStringUriOnly());
+						}
+					}
+				}
+				Log.i(
+						"[Push Notification] Refreshing registers to ensure token is up to date: "
+								+ regId);
+				core.refreshRegisters();
+			}
+		} else {
+			if (core.getProxyConfigList().length > 0) {
+				for (ProxyConfig lpc : core.getProxyConfigList()) {
+					lpc.edit();
+					lpc.setContactUriParameters(null);
+					lpc.done();
+					if (lpc.getIdentityAddress() != null)
+						Log.d(
+								"[Push Notification] infos removed from proxy config "
+										+ lpc.getIdentityAddress().asStringUriOnly());
+				}
+				core.refreshRegisters();
+			}
+		}
+	}
+
     public void terminateCall() {
         if (mCore.inCall()) {
             Call c = mCore.getCurrentCall();
@@ -283,6 +344,11 @@ public class LinphoneMiniManager implements CoreListener {
 
 	public void listenCall(CallbackContext callbackContext){
 		mCallbackContext = callbackContext;
+	}
+
+	public void ensureRegistered(){
+		Core lc = mCore;
+		lc.ensureRegistered();
 	}
 
 	public void setStunServer(String stunServer, CallbackContext callbackContext) {
@@ -356,6 +422,8 @@ public class LinphoneMiniManager implements CoreListener {
 		Address address = lcFactory.createAddress("sip:" + username + "@" + domain);
 		username = address.getUsername();
 		domain = address.getDomain();
+		int port = address.getPort();
+
 		if(password != null) {
 			mCore.addAuthInfo(lcFactory.createAuthInfo(username, username, password, (String)null, (String)null, domain));
 		}
@@ -366,7 +434,11 @@ public class LinphoneMiniManager implements CoreListener {
 		proxyCfg.setIdentityAddress(address);
 		proxyCfg.done();
 
-		proxyCfg.setServerAddr(domain);
+		if (port != 0) {
+			proxyCfg.setServerAddr(domain + ':' + port);
+		} else {
+			proxyCfg.setServerAddr(domain);
+		}
 
 
 		proxyCfg.enableRegister(true);

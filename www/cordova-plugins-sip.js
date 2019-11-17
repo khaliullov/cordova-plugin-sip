@@ -18,6 +18,24 @@ module.exports =
             [username, password, domain]
         );
     },
+    setPushNotification: function (appId, regId, successCallback, errorCallback) {
+        cordova.exec(
+            successCallback,
+            errorCallback,
+            "Linphone",
+            "setPushNotification",
+            [appId, regId]
+        );
+    },
+    ensureRegistered: function (successCallback, errorCallback) {
+        cordova.exec(
+            successCallback,
+            errorCallback,
+            "Linphone",
+            "ensureRegistered",
+            []
+        );
+    },
     logout: function (successCallback, errorCallback) {
         cordova.exec(
             successCallback,

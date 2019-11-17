@@ -61,6 +61,12 @@ public class Linphone extends CordovaPlugin  {
             case "listenCall":
                 listenCall(callbackContext);
                 return true;
+            case "ensureRegistered":
+                ensureRegistered(callbackContext);
+                return true;
+            case "setPushNotification":
+                setPushNotification(args.getString(0), args.getString(1), callbackContext);
+                return true;
             case "acceptCall":
                 acceptCall(args.getString(0), callbackContext);
                 return true;
@@ -100,10 +106,14 @@ public class Linphone extends CordovaPlugin  {
       mLinphoneManager.login(username,password,domain,callbackContext);
     }
 
-  @Override
-  public void onRequestPermissionResult(int requestCode, String[] permissions, int[] grantResults) throws JSONException {
+    public void setPushNotification(final String appId, final String regId, final CallbackContext callbackContext) {
+        mLinphoneManager.setPushNotification(appId, regId);
+    }
 
-  }
+    @Override
+    public void onRequestPermissionResult(int requestCode, String[] permissions, int[] grantResults) throws JSONException {
+
+    }
 
     public static synchronized void logout(final CallbackContext callbackContext) {
         try{
@@ -137,6 +147,10 @@ public class Linphone extends CordovaPlugin  {
 
     public static synchronized void listenCall( final CallbackContext callbackContext){
         mLinphoneManager.listenCall(callbackContext);
+    }
+
+    public static synchronized void ensureRegistered( final CallbackContext callbackContext){
+        mLinphoneManager.ensureRegistered();
     }
 
     public static synchronized void setStunServer(final String stunServer, final CallbackContext callbackContext){
