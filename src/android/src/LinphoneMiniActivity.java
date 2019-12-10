@@ -18,18 +18,23 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+
 import android.app.Activity;
+import android.app.KeyguardManager;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.opengl.GLSurfaceView;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.widget.RelativeLayout;
-import android.graphics.Color;
 import android.view.View;
-import android.content.pm.ActivityInfo;
+import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.RelativeLayout;
 
 import org.linphone.core.Call;
 import org.linphone.core.Core;
