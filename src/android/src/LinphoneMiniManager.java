@@ -40,12 +40,10 @@ import org.linphone.core.ChatRoom;
 import org.linphone.core.ConfiguringState;
 import org.linphone.core.Content;
 import org.linphone.core.Core;
-
-import org.linphone.core.CoreException;
-import org.linphone.core.EcCalibratorStatus;
-import org.linphone.core.Factory;
 import org.linphone.core.CoreListener;
+import org.linphone.core.EcCalibratorStatus;
 import org.linphone.core.Event;
+import org.linphone.core.Factory;
 import org.linphone.core.Friend;
 import org.linphone.core.FriendList;
 import org.linphone.core.GlobalState;
@@ -63,7 +61,6 @@ import org.linphone.mediastream.video.capture.hwconf.AndroidCameraConfiguration.
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -198,6 +195,8 @@ public class LinphoneMiniManager implements CoreListener {
 		mCore.setRootCa(basePath + "/rootca.pem");
 		mCore.setPlayFile(basePath + "/toy_mono.wav");
 		mCore.setCallLogsDatabasePath(basePath + "/linphone-history.db");
+		mCore.setRing(basePath + "/oldphone_mono.wav");
+		mCore.setRingDuringIncomingEarlyMedia(true);
 
 //		int availableCores = Runtime.getRuntime().availableProcessors();
 //		mCore.getConfig(availableCores);
