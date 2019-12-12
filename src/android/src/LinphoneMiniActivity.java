@@ -21,6 +21,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 import android.app.Activity;
 import android.app.KeyguardManager;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -37,12 +40,10 @@ import android.widget.Button;
 import android.widget.RelativeLayout;
 
 import org.linphone.core.Call;
-import org.linphone.core.Core;
 import org.linphone.core.CallParams;
-
+import org.linphone.core.Core;
 import org.linphone.mediastream.Log;
 import org.linphone.mediastream.video.AndroidVideoWindowImpl;
-
 /**
  * @author Sylvain Berfini
  */
@@ -51,6 +52,15 @@ public class LinphoneMiniActivity extends Activity {
     private SurfaceView mCaptureView;
     private AndroidVideoWindowImpl androidVideoWindowImpl;
     private Button answerButton;
+
+    public static final int NOTIFICATION_ID = 45325623;
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        // getIntent() should always return the most recent
+        setIntent(intent);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -140,6 +150,44 @@ public class LinphoneMiniActivity extends Activity {
 
         LinphoneMiniManager.getInstance().callActivity = this;
 
+        showNotification();
+    }
+
+    private void showNotification() {
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        String CHANNEL_ID = "cordova-plugin-linphone-sip";
+/*
+        Intent resultIntent = new Intent(getApplicationContext(), LinphoneMiniActivity.class);
+        resultIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 1, resultIntent, PendingIntent.FLAG_NO_CREATE);
+*/
+        Resources res  = getResources();
+        String pkgName = getPackageName();
+
+        Notification.Builder builder = new Notification.Builder(this)
+                .setContentTitle("EVO Life")
+                .setContentText("Входяший звонок домофона")
+                .setSmallIcon(res.getIdentifier("ic_launcher", "mipmap", pkgName))
+                /*.setContentIntent(resultPendingIntent)*/;
+
+        if (Build.VERSION.SDK_INT >= 26){
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID,"EVO Life sip", NotificationManager.IMPORTANCE_DEFAULT);
+            notificationManager.createNotificationChannel(channel);
+            builder.setChannelId(CHANNEL_ID);
+        }
+
+        builder.setPriority(Notification.PRIORITY_MAX);
+
+        Notification notification = builder.build();
+
+        notificationManager.notify(NOTIFICATION_ID, notification);
+    }
+
+
+    private void hideNotification() {
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancel(NOTIFICATION_ID);
     }
 
     private void fixZOrder(SurfaceView video, SurfaceView preview) {
@@ -249,6 +297,8 @@ public class LinphoneMiniActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        hideNotification();
+
         mCaptureView = null;
 
         if (mVideoView != null) {
