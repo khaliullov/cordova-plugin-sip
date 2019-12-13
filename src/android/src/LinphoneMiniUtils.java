@@ -18,12 +18,12 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+import android.content.Context;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
-import android.content.Context;
 
 /**
  * @author Sylvain Berfini
@@ -31,7 +31,10 @@ import android.content.Context;
 public class LinphoneMiniUtils {
 	public static void copyIfNotExist(Context context, int ressourceId, String target) throws IOException {
 		File lFileToCopy = new File(target);
-		if (!lFileToCopy.exists()) {
+
+		InputStream lInputStream = context.getResources().openRawResource(ressourceId);
+
+		if (!lFileToCopy.exists() || lFileToCopy.length() != lInputStream.available()) {
 			copyFromPackage(context, ressourceId, lFileToCopy.getName());
 		}
 	}

@@ -45,6 +45,7 @@
     <source-file src="src/android/res/raw/oldphone_mono.wav" target-dir="res/raw" />
 
     <!-- drawable src/android/resources -->
+    <resource-file src="src/android/res/drawable/icon.png" target="res/drawable/icon.png" />
     <resource-file src="src/android/res/drawable/video_overlay.png" target="res/drawable/video_overlay.png" />
     <resource-file src="src/android/res/drawable/btn_open.xml" target="res/drawable/btn_open.xml" />
     <resource-file src="src/android/res/drawable/btn_answer.xml" target="res/drawable/btn_answer.xml" />
