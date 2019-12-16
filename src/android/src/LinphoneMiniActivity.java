@@ -21,10 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 import android.app.Activity;
 import android.app.KeyguardManager;
-import android.app.Notification;
-import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -55,8 +52,6 @@ public class LinphoneMiniActivity extends Activity {
     private SurfaceView mCaptureView;
     private AndroidVideoWindowImpl androidVideoWindowImpl;
     private Button answerButton;
-
-    private Boolean answered = false;
 
     public static final int NOTIFICATION_ID = 45325623;
 
@@ -154,49 +149,7 @@ public class LinphoneMiniActivity extends Activity {
         //}
 
         LinphoneMiniManager.getInstance().callActivity = this;
-
-        showNotification();
     }
-
-    private void showNotification() {
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-
-        String CHANNEL_ID = "cordova-plugin-linphone-sip";
-
-        Intent resultIntent = new Intent(getApplicationContext(), LinphoneMiniActivity.class);
-        resultIntent.putExtra("address", "");
-        resultIntent.putExtra("displayName", "");
-        resultIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        resultIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_HISTORY);
-        PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        Resources res  = getResources();
-        String pkgName = getPackageName();
-
-        Notification.Builder builder = new Notification.Builder(this)
-                .setContentTitle("Входяший звонок домофона")
-                .setSmallIcon(res.getIdentifier("icon", "drawable", pkgName))
-                .setContentIntent(resultPendingIntent);
-
-        int color = 0xFF4A47EC;
-
-        if (Build.VERSION.SDK_INT >= 21) {
-            builder.setColor(color);
-        }
-
-        if (Build.VERSION.SDK_INT >= 26){
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID,"EVO Life sip", NotificationManager.IMPORTANCE_DEFAULT);
-            notificationManager.createNotificationChannel(channel);
-            builder.setChannelId(CHANNEL_ID);
-        }
-
-        builder.setPriority(Notification.PRIORITY_MAX);
-
-        Notification notification = builder.build();
-
-        notificationManager.notify(NOTIFICATION_ID, notification);
-    }
-
 
     private void hideNotification() {
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -237,7 +190,7 @@ public class LinphoneMiniActivity extends Activity {
 
                 answerButton.setEnabled(false);
 
-                answered = true;
+                Linphone.answered = true;
             }
         }
     }
@@ -259,13 +212,12 @@ public class LinphoneMiniActivity extends Activity {
                 Core lc = Linphone.mLinphoneCore;
                 if (lc != null) {
                     Call c = lc.getCurrentCall();
-                    if(c != null){
+                    if (c != null) {
                         c.setNativeVideoWindowId(androidVideoWindowImpl);
                     }
                 }
             }
         }
-
     }
 
     @Override
@@ -279,8 +231,9 @@ public class LinphoneMiniActivity extends Activity {
                 Core lc = Linphone.mLinphoneCore;
                 if (lc != null) {
                     Call c = lc.getCurrentCall();
-                    if(c != null){
+                    if (c != null){
                         c.setNativeVideoWindowId(null);
+                        c.pause();
                     }
                 }
             }
@@ -302,7 +255,7 @@ public class LinphoneMiniActivity extends Activity {
             Call c = lc.getCurrentCall();
 
             if (c != null){
-                if (answered) {
+                if (Linphone.answered) {
                     c.terminate();
                 } else {
                     c.decline(Reason.NotAnswered);

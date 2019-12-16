@@ -19,13 +19,20 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.media.AudioManager;
+import android.os.Build;
 import android.view.SurfaceView;
 
 import org.apache.cordova.CallbackContext;
+import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.PluginResult;
 import org.linphone.core.Address;
 import org.linphone.core.AuthInfo;
@@ -111,6 +118,7 @@ public class LinphoneMiniManager implements CoreListener {
 			mCore.clearAllAuthInfo();
 			mCore.clearProxyConfig();
 			mAudioManager = ((AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE));
+            mAudioManager.setMode(AudioManager.MODE_IN_CALL);
 			mAudioManager.setSpeakerphoneOn(true);
         } catch (IOException e) {
 			Log.e(new Object[]{"Error initializing Linphone",e.getMessage()});
@@ -286,7 +294,46 @@ public class LinphoneMiniManager implements CoreListener {
 		}
 	}
 
-    public void terminateCall() {
+	public void showNotification(CordovaInterface cordova) {
+		NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
+
+		String CHANNEL_ID = "cordova-plugin-linphone-sip";
+
+		Intent resultIntent = new Intent(mContext.getApplicationContext(), LinphoneMiniActivity.class);
+		resultIntent.putExtra("address", "");
+		resultIntent.putExtra("displayName", "");
+		resultIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+		PendingIntent resultPendingIntent = PendingIntent.getActivity(cordova.getActivity(), 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
+
+		Resources res  = mContext.getResources();
+		String pkgName = mContext.getPackageName();
+
+		Notification.Builder builder = new Notification.Builder(mContext)
+				.setContentTitle("Входяший звонок домофона")
+				.setSmallIcon(res.getIdentifier("icon", "drawable", pkgName))
+				.setContentIntent(resultPendingIntent);
+
+		int color = 0xFF4A47EC;
+
+		if (Build.VERSION.SDK_INT >= 21) {
+			builder.setColor(color);
+		}
+
+		if (Build.VERSION.SDK_INT >= 26){
+			NotificationChannel channel = new NotificationChannel(CHANNEL_ID,"EVO Life sip", NotificationManager.IMPORTANCE_DEFAULT);
+			notificationManager.createNotificationChannel(channel);
+			builder.setChannelId(CHANNEL_ID);
+		}
+
+		builder.setPriority(Notification.PRIORITY_MAX);
+
+		Notification notification = builder.build();
+
+		notificationManager.notify(LinphoneMiniActivity.NOTIFICATION_ID, notification);
+	}
+
+
+	public void terminateCall() {
         if (mCore.inCall()) {
             Call c = mCore.getCurrentCall();
             if (c != null) c.terminate();

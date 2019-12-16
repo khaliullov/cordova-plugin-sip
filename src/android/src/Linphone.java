@@ -33,6 +33,7 @@ public class Linphone extends CordovaPlugin  {
     public SipProfile me = null;
     public SipAudioCall call = null;
 
+    public static Boolean answered = false;
 
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
@@ -162,24 +163,28 @@ public class Linphone extends CordovaPlugin  {
     }
 
     public static synchronized void acceptCall( final String isAcceptCall, final CallbackContext callbackContext){
-        if("true".equals(isAcceptCall)) {
+        if ("true".equals(isAcceptCall)) {
+            Linphone.answered = false;
             Intent intent = new Intent(mContext, LinphoneMiniActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             intent.putExtra("address", "");
             intent.putExtra("displayName", "");
-            mContext.startActivity(intent);
+            mLinphoneManager.showNotification(mInstance.cordova);
             mLinphoneManager.previewCall(callbackContext);
+            mInstance.cordova.getActivity().startActivity(intent);
             callbackContext.success();
-        } else
+        } else {
             mLinphoneManager.terminateCall();
+        }
     }
 
     public static synchronized void videocall(final String address, final String displayName, final CallbackContext callbackContext) {
         try{
             Log.d("incall", address, displayName);
+            Linphone.answered = false;
             mLinphoneManager.newOutgoingCall(address, displayName);
             Intent intent = new Intent(mContext, LinphoneMiniActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             intent.putExtra("address", address);
             intent.putExtra("displayName", displayName);
             mContext.startActivity(intent);
