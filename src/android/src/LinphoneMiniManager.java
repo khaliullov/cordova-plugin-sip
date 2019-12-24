@@ -19,20 +19,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 import android.app.Activity;
-import android.app.Notification;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.media.AudioManager;
-import android.os.Build;
-import android.view.SurfaceView;
+
+import androidx.annotation.NonNull;
+
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.InstanceIdResult;
 
 import org.apache.cordova.CallbackContext;
-import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.PluginResult;
 import org.linphone.core.Address;
 import org.linphone.core.AuthInfo;
@@ -75,13 +74,12 @@ import java.util.TimerTask;
  * @author Sylvain Berfini
  */
 public class LinphoneMiniManager implements CoreListener {
-	private static final String TAG = "LM_MNGR";
+	private static final String TAG = "LinphoneSip";
 	public static LinphoneMiniManager mInstance;
 	public static Context mContext;
 	public static Core mCore;
-    //public static LinphonePreferences mPrefs;
+    public static LinphonePreferences mPrefs;
 	public static Timer mTimer;
-	public static SurfaceView mCaptureView;
 	public CallbackContext mCallbackContext;
 	public CallbackContext mLoginCallbackContext;
 	private AudioManager mAudioManager;
@@ -95,33 +93,71 @@ public class LinphoneMiniManager implements CoreListener {
 
 	}
 
-	public LinphoneMiniManager(Context c) {
+	public LinphoneMiniManager(Context c, boolean isPush) {
 		mContext = c;
 		Factory.instance().setDebugMode(true, "Linphone Mini");
-        //mPrefs = LinphonePreferences.instance();
+
+		android.util.Log.d(TAG, "Start initializing Linphone");
+
+		mPrefs = LinphonePreferences.instance();
 
 		try {
-
 			String basePath = mContext.getFilesDir().getAbsolutePath();
-			copyAssetsFromPackage(basePath);
-			mCore = Factory.instance().createCore(basePath + "/.linphonerc", basePath + "/linphonerc", mContext);
+
+			if (!isPush) {
+				copyAssetsFromPackage(basePath);
+			}
+
+			mCore = Factory.instance().createCore(mPrefs.getLinphoneDefaultConfig(), mPrefs.getLinphoneFactoryConfig(), mContext);
+
 			mCore.addListener(this);
+
+			if (isPush) {
+				android.util.Log.w(TAG,
+						"[Manager] We are here because of a received push notification, enter background mode before starting the Core");
+				mCore.enterBackground();
+			}
+
 			mCore.start();
+
 			initCoreValues(basePath);
 
 			setUserAgent();
 			setFrontCamAsDefault();
-			startIterate();
-			mInstance = this;
+
 			mCore.setNetworkReachable(true); // Let's assume it's true
-			mCaptureView = new SurfaceView(mContext);
-			mCore.clearAllAuthInfo();
-			mCore.clearProxyConfig();
-			mAudioManager = ((AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE));
-            mAudioManager.setMode(AudioManager.MODE_IN_CALL);
-			mAudioManager.setSpeakerphoneOn(true);
+
+			startIterate();
+
+			mInstance = this;
+
+			Log.i(
+					"[Push Notification] firebase push sender id ");
+			try {
+				FirebaseInstanceId.getInstance()
+						.getInstanceId()
+						.addOnCompleteListener(
+								new OnCompleteListener<InstanceIdResult>() {
+									@Override
+									public void onComplete(@NonNull Task<InstanceIdResult> task) {
+										if (!task.isSuccessful()) {
+											android.util.Log.e(TAG,
+													"[Push Notification] firebase getInstanceId failed: "
+															+ task.getException());
+											return;
+										}
+										String token = task.getResult().getToken();
+										android.util.Log.i(TAG, "[Push Notification] firebase token is: " + token);
+										LinphonePreferences.instance()
+												.setPushNotificationRegistrationID(token);
+									}
+								});
+			} catch (Exception e) {
+				android.util.Log.e(TAG, "[Push Notification] firebase not available.");
+			}
         } catch (IOException e) {
-			Log.e(new Object[]{"Error initializing Linphone",e.getMessage()});
+			android.util.Log.d(TAG, "Error initializing Linphone");
+			Log.e(new Object[]{"Error initializing Linphone", e.getMessage()});
 		}
 	}
 
@@ -141,13 +177,25 @@ public class LinphoneMiniManager implements CoreListener {
 			mCore.stopDtmf();
 			mCore.stopDtmfStream();
 			mCore.stopEchoTester();
-		}
-		catch (RuntimeException e) {
-		}
-		finally {
+		} catch (RuntimeException e) {
+
+		} finally {
+			destroyCore();
+
 			mCore = null;
 			mInstance = null;
 		}
+	}
+
+	private void destroyCore() {
+		Log.w("[Manager] Destroying Core");
+
+		if (LinphonePreferences.instance() != null) {
+			mCore.setNetworkReachable(false);
+		}
+
+		mCore.stop();
+		mCore.removeListener(this);
 	}
 
 	private void startIterate() {
@@ -161,8 +209,6 @@ public class LinphoneMiniManager implements CoreListener {
 		mTimer = new Timer("LinphoneMini scheduler");
 		mTimer.schedule(lTask, 0, 20);
 	}
-
-
 
 	private void setUserAgent() {
 		try {
@@ -198,7 +244,6 @@ public class LinphoneMiniManager implements CoreListener {
 	}
 
 	private void initCoreValues(String basePath) {
-//		mCore.setContext(mContext);
 		mCore.setRing(null);
 		mCore.setRootCa(basePath + "/rootca.pem");
 		mCore.setPlayFile(basePath + "/toy_mono.wav");
@@ -206,8 +251,12 @@ public class LinphoneMiniManager implements CoreListener {
 		mCore.setRing(basePath + "/oldphone_mono.wav");
 		mCore.setRingDuringIncomingEarlyMedia(true);
 
-//		int availableCores = Runtime.getRuntime().availableProcessors();
-//		mCore.getConfig(availableCores);
+		mAudioManager = ((AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE));
+		mAudioManager.setMode(AudioManager.MODE_IN_CALL);
+		mAudioManager.setSpeakerphoneOn(true);
+
+		mCore.enableEchoCancellation(true);
+		mCore.enableEchoLimiter(true);
 	}
 
     public void newOutgoingCall(String to, String displayName) {
@@ -229,7 +278,6 @@ public class LinphoneMiniManager implements CoreListener {
         } else {
             Log.e(new Object[]{"Error: Network unreachable"});
         }
-
     }
 
 	public void setPushNotification(String appId, String regId) {
@@ -238,8 +286,11 @@ public class LinphoneMiniManager implements CoreListener {
 			return;
 		}
 
+		android.util.Log.d(TAG, "[SET Push Notification] " + appId + " " + regId);
+
 		if (regId != "") {
 			// Add push infos to exisiting proxy configs
+			android.util.Log.d(TAG, "[SET Push Notification] getProxyConfigList().length " + core.getProxyConfigList().length);
 			if (core.getProxyConfigList().length > 0) {
 				for (ProxyConfig lpc : core.getProxyConfigList()) {
 					if (lpc == null) continue;
@@ -248,8 +299,8 @@ public class LinphoneMiniManager implements CoreListener {
 						lpc.setContactUriParameters(null);
 						lpc.done();
 						if (lpc.getIdentityAddress() != null)
-							Log.d(
-									"[Push Notification] infos removed from proxy config "
+							android.util.Log.d(TAG,
+									"[SET Push Notification] infos removed from proxy config "
 											+ lpc.getIdentityAddress().asStringUriOnly());
 					} else {
 						String contactInfos =
@@ -260,6 +311,8 @@ public class LinphoneMiniManager implements CoreListener {
 										+ ";pn-tok="
 										+ regId
 										+ ";pn-silent=1";
+
+						android.util.Log.d(TAG, contactInfos);
 						String prevContactParams = lpc.getContactParameters();
 						if (prevContactParams == null
 								|| prevContactParams.compareTo(contactInfos) != 0) {
@@ -267,14 +320,14 @@ public class LinphoneMiniManager implements CoreListener {
 							lpc.setContactUriParameters(contactInfos);
 							lpc.done();
 							if (lpc.getIdentityAddress() != null)
-								Log.d(
+								android.util.Log.d(TAG,
 										"[Push Notification] infos added to proxy config "
 												+ lpc.getIdentityAddress().asStringUriOnly());
 						}
 					}
 				}
-				Log.i(
-						"[Push Notification] Refreshing registers to ensure token is up to date: "
+				android.util.Log.d(TAG,
+						"[SET Push Notification] Refreshing registers to ensure token is up to date: "
 								+ regId);
 				core.refreshRegisters();
 			}
@@ -285,53 +338,14 @@ public class LinphoneMiniManager implements CoreListener {
 					lpc.setContactUriParameters(null);
 					lpc.done();
 					if (lpc.getIdentityAddress() != null)
-						Log.d(
-								"[Push Notification] infos removed from proxy config "
+						android.util.Log.d(TAG,
+								"[SET Push Notification] infos removed from proxy config "
 										+ lpc.getIdentityAddress().asStringUriOnly());
 				}
 				core.refreshRegisters();
 			}
 		}
 	}
-
-	public void showNotification(CordovaInterface cordova) {
-		NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
-
-		String CHANNEL_ID = "cordova-plugin-linphone-sip";
-
-		Intent resultIntent = new Intent(mContext.getApplicationContext(), LinphoneMiniActivity.class);
-		resultIntent.putExtra("address", "");
-		resultIntent.putExtra("displayName", "");
-		resultIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-		PendingIntent resultPendingIntent = PendingIntent.getActivity(cordova.getActivity(), 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
-
-		Resources res  = mContext.getResources();
-		String pkgName = mContext.getPackageName();
-
-		Notification.Builder builder = new Notification.Builder(mContext)
-				.setContentTitle("Входяший звонок домофона")
-				.setSmallIcon(res.getIdentifier("icon", "drawable", pkgName))
-				.setContentIntent(resultPendingIntent);
-
-		int color = 0xFF4A47EC;
-
-		if (Build.VERSION.SDK_INT >= 21) {
-			builder.setColor(color);
-		}
-
-		if (Build.VERSION.SDK_INT >= 26){
-			NotificationChannel channel = new NotificationChannel(CHANNEL_ID,"EVO Life sip", NotificationManager.IMPORTANCE_DEFAULT);
-			notificationManager.createNotificationChannel(channel);
-			builder.setChannelId(CHANNEL_ID);
-		}
-
-		builder.setPriority(Notification.PRIORITY_MAX);
-
-		Notification notification = builder.build();
-
-		notificationManager.notify(LinphoneMiniActivity.NOTIFICATION_ID, notification);
-	}
-
 
 	public void terminateCall() {
         if (mCore.inCall()) {
@@ -388,8 +402,12 @@ public class LinphoneMiniManager implements CoreListener {
 		}
 	}
 
-	public void listenCall(CallbackContext callbackContext){
+	public void listenCall(CallbackContext callbackContext) {
 		mCallbackContext = callbackContext;
+	}
+
+	public void listenLogin(CallbackContext callbackContext) {
+		mLoginCallbackContext = callbackContext;
 	}
 
 	public void ensureRegistered(){
@@ -397,8 +415,7 @@ public class LinphoneMiniManager implements CoreListener {
 		lc.ensureRegistered();
 	}
 
-	public void setStunServer(String stunServer, CallbackContext callbackContext) {
-		mCallbackContext = callbackContext;
+	public void setStunServer(String stunServer) {
 		ProxyConfig mProxyConfig = mCore.getDefaultProxyConfig();
 		mProxyConfig.edit();
 		NatPolicy natPolicy = mProxyConfig.getNatPolicy();
@@ -413,8 +430,7 @@ public class LinphoneMiniManager implements CoreListener {
 		mProxyConfig.done();
 	}
 
-	public void disableStunServer(CallbackContext callbackContext) {
-		mCallbackContext = callbackContext;
+	public void disableStunServer() {
 		ProxyConfig mProxyConfig = mCore.getDefaultProxyConfig();
 		mProxyConfig.edit();
 		NatPolicy natPolicy = mProxyConfig.getNatPolicy();
@@ -428,8 +444,7 @@ public class LinphoneMiniManager implements CoreListener {
 		mProxyConfig.done();
 	}
 
-	public void acceptCall(CallbackContext callbackContext) {
-		mCallbackContext = callbackContext;
+	public void acceptCall() {
 		Call call = mCore.getCurrentCall();
 		if (call != null){
 			CallParams params = call.getParams();
@@ -438,8 +453,7 @@ public class LinphoneMiniManager implements CoreListener {
 		}
 	}
 
-	public void previewCall(CallbackContext callbackContext) {
-		mCallbackContext = callbackContext;
+	public void previewCall() {
 		Call call = mCore.getCurrentCall();
 		if (call != null){
 			CallParams params = call.getParams();
@@ -448,18 +462,15 @@ public class LinphoneMiniManager implements CoreListener {
 		}
 	}
 
-	public void call(String address, String displayName, CallbackContext callbackContext) {
-
-		mCallbackContext = callbackContext;
+	public void call(String address, String displayName) {
 		newOutgoingCall(address, displayName);
 	}
 
-	public void hangup(CallbackContext callbackContext) {
+	public void hangup() {
 		terminateCall();
 	}
 
-	public void login(String username, String password, String domain, CallbackContext callbackContext) {
-		mLoginCallbackContext = callbackContext;
+	public void login(String username, String password, String domain) {
 		Factory lcFactory = Factory.instance();
 
 		mCore.clearAllAuthInfo();
@@ -470,11 +481,10 @@ public class LinphoneMiniManager implements CoreListener {
 		domain = address.getDomain();
 		int port = address.getPort();
 
-		if(password != null) {
+		if (password != null) {
 			mCore.addAuthInfo(lcFactory.createAuthInfo(username, username, password, (String)null, (String)null, domain));
 		}
 
-//			ProxyConfig proxyCfg = mCore.createProxyConfig("sip:" + username + "@" + domain, domain, (String)null, true);
 		ProxyConfig proxyCfg = mCore.createProxyConfig();
 		proxyCfg.edit();
 		proxyCfg.setIdentityAddress(address);
@@ -486,10 +496,22 @@ public class LinphoneMiniManager implements CoreListener {
 			proxyCfg.setServerAddr(domain);
 		}
 
-
 		proxyCfg.enableRegister(true);
 		mCore.addProxyConfig(proxyCfg);
 		mCore.setDefaultProxyConfig(proxyCfg);
+
+		mPrefs.setPushNotificationEnabled(true);
+
+		android.util.Log.d(TAG, "logined");
+
+		mPrefs.setPushNotificationEnabled(true);
+	}
+
+	public void logout() {
+		ProxyConfig[] prxCfgs = mCore.getProxyConfigList();
+		final ProxyConfig proxyCfg = prxCfgs[0];
+		mCore.removeProxyConfig(proxyCfg);
+		android.util.Log.d(TAG, "logouted");
 	}
 
 	@Override
@@ -501,44 +523,60 @@ public class LinphoneMiniManager implements CoreListener {
 
 	@Override
 	public void onRegistrationStateChanged(Core core, ProxyConfig proxyConfig, RegistrationState registrationState, String s) {
-		if(registrationState == RegistrationState.Ok)
-		{
-			mLoginCallbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK,"RegistrationSuccess"));
-
+		if (registrationState == RegistrationState.Ok) {
+			android.util.Log.d(TAG, "RegistrationSuccess");
+		} else if (registrationState == RegistrationState.Failed) {
+			android.util.Log.d(TAG, "RegistrationFailed:: " + s);
 		}
-		else if(registrationState == RegistrationState.Failed)
-		{
-			mLoginCallbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK,"RegistrationFailed:: "+s));
+
+		if (mLoginCallbackContext != null) {
+			if (registrationState == RegistrationState.Ok) {
+				mLoginCallbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, "RegistrationSuccess"));
+			} else if (registrationState == RegistrationState.Failed) {
+				mLoginCallbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, "RegistrationFailed:: " + s));
+			}
 		}
 	}
 
 	@Override
 	public void onCallStateChanged(Core core, Call call, State state, String s) {
-		if(state == State.Connected)
-		{
-			mCallbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, "Connected"));
-		}
-		else if(state == State.IncomingReceived)
-		{
-			mCallbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK,"Incoming"));
-		}
-		else if(state == State.End)
-		{
-			mCallbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK,"End"));
+		android.util.Log.d(TAG, "-------------- onCallStateChanged -------------");
 
+		if (state == State.Connected) {
+			android.util.Log.d(TAG, "StateChanged Connected");
+		} else if (state == State.IncomingReceived) {
+			LinphoneContext.instance().openIncall();
+			android.util.Log.d(TAG, "StateChanged Incoming");
+		} else if (state == State.End) {
 			if (callActivity != null) {
 				callActivity.finish();
 			}
-		}
-		else if(state == State.Error)
-		{
-			mCallbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK,"Error"));
 
+			android.util.Log.d(TAG, "StateChanged End");
+		} else if (state == State.Error) {
 			if (callActivity != null) {
 				callActivity.finish();
 			}
+
+			android.util.Log.d(TAG, "StateChanged Error");
 		}
-		Log.d("Call state: " + state + "(" + s + ")");
+
+		if (mCallbackContext != null) {
+			if (state == State.Connected) {
+				mCallbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, "Connected"));
+			} else if (state == State.IncomingReceived) {
+				mCallbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, "Incoming"));
+			} else if (state == State.End) {
+				mCallbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, "End"));
+
+
+			} else if (state == State.Error) {
+				mCallbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, "Error"));
+
+			}
+		}
+
+		android.util.Log.d(TAG, "Call state: " + state + "(" + s + ")");
 
 	}
 
@@ -639,12 +677,19 @@ public class LinphoneMiniManager implements CoreListener {
 
 	@Override
 	public void onConfiguringStatus(Core core, ConfiguringState configuringState, String s) {
-
+		if (configuringState == ConfiguringState.Successful) {
+			android.util.Log.i(TAG,"[Context] Configuring state is Successful");
+			mPrefs.setPushNotificationEnabled(true);
+		} else if (configuringState == ConfiguringState.Failed) {
+			android.util.Log.i(TAG,"[Context] Configuring state is Failed");
+		} else if (configuringState == ConfiguringState.Skipped) {
+			android.util.Log.i(TAG,"[Context] Configuring state is Skipped");
+		}
 	}
 
 	@Override
 	public void onNetworkReachable(Core core, boolean b) {
-		android.util.Log.d(TAG, "Network reachable??"+b);
+		android.util.Log.d(TAG, "Is network reachable?? " + b);
 	}
 
 	@Override

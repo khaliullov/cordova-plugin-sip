@@ -102,7 +102,7 @@ public class LinphoneMiniActivity extends Activity {
         androidVideoWindowImpl = new AndroidVideoWindowImpl(mVideoView, mCaptureView, new AndroidVideoWindowImpl.VideoWindowListener() {
             public void onVideoRenderingSurfaceReady(AndroidVideoWindowImpl vw, SurfaceView surface) {
                 Log.d("onVideoRenderingSurfaceReady");
-                Core lc = Linphone.mLinphoneCore;
+                Core lc = LinphoneContext.instance().mLinphoneManager.getLc();
                 if (lc != null) {
                     Call c = lc.getCurrentCall();
                     if(c != null){
@@ -114,7 +114,7 @@ public class LinphoneMiniActivity extends Activity {
 
             public void onVideoRenderingSurfaceDestroyed(AndroidVideoWindowImpl vw) {
                 Log.d("onVideoRenderingSurfaceDestroyed");
-                Core lc = Linphone.mLinphoneCore;
+                Core lc = LinphoneContext.instance().mLinphoneManager.getLc();
                 if (lc != null) {
                     Call c = lc.getCurrentCall();
                     if(c != null){
@@ -126,14 +126,14 @@ public class LinphoneMiniActivity extends Activity {
             public void onVideoPreviewSurfaceReady(AndroidVideoWindowImpl vw, SurfaceView surface) {
                 Log.d("onVideoPreviewSurfaceReady");
                 mCaptureView = surface;
-                Linphone.mLinphoneCore.setNativePreviewWindowId(mCaptureView);
+                LinphoneContext.instance().mLinphoneManager.getLc().setNativePreviewWindowId(mCaptureView);
 
             }
 
             public void onVideoPreviewSurfaceDestroyed(AndroidVideoWindowImpl vw) {
                 Log.d("onVideoPreviewSurfaceDestroyed");
                 // Remove references kept in jni code and restart camera
-                Linphone.mLinphoneCore.setNativePreviewWindowId(null);
+                LinphoneContext.instance().mLinphoneManager.getLc().setNativePreviewWindowId(null);
             }
         });
 
@@ -142,8 +142,8 @@ public class LinphoneMiniActivity extends Activity {
         String address = extras.getString("address");
         String displayName = extras.getString("displayName");
 
-        String videoDeviceId = Linphone.mLinphoneCore.getVideoDevice();
-        Linphone.mLinphoneCore.setVideoDevice(videoDeviceId);
+        String videoDeviceId = LinphoneContext.instance().mLinphoneManager.getLc().getVideoDevice();
+        LinphoneContext.instance().mLinphoneManager.getLc().setVideoDevice(videoDeviceId);
         //if (address != "") {
             // Linphone.mLinphoneManager.newOutgoingCall(address, displayName);
         //}
@@ -162,25 +162,8 @@ public class LinphoneMiniActivity extends Activity {
         preview.setZOrderMediaOverlay(true); // Needed to be able to display control layout over
     }
 
-//    public void switchCamera() {
-//        try {
-//            String videoDeviceId = Linphone.mLinphoneCore.getVideoDevice();
-//            videoDeviceId = (videoDeviceId + 1) % AndroidCameraConfiguration.retrieveCameras().length;
-//            Linphone.mLinphoneCore.setVideoDevice(videoDeviceId);
-//            Linphone.mLinphoneManager.updateCall();
-//
-//            // previous call will cause graph reconstruction -> regive preview
-//            // window
-//            if (mCaptureView != null) {
-//                Linphone.mLinphoneCore.setPreviewWindow(mCaptureView);
-//            }
-//        } catch (ArithmeticException ae) {
-//            Log.e("Cannot switch camera : no camera");
-//        }
-//    }
-
     public void butAnswer(View v) {
-        Core lc = Linphone.mLinphoneCore;
+        Core lc = LinphoneContext.instance().mLinphoneManager.getLc();
         if (lc != null) {
             Call call = lc.getCurrentCall();
             if (call != null) {
@@ -190,7 +173,7 @@ public class LinphoneMiniActivity extends Activity {
 
                 answerButton.setEnabled(false);
 
-                Linphone.answered = true;
+                LinphoneContext.answered = true;
             }
         }
     }
@@ -209,7 +192,7 @@ public class LinphoneMiniActivity extends Activity {
 
         if (androidVideoWindowImpl != null) {
             synchronized (androidVideoWindowImpl) {
-                Core lc = Linphone.mLinphoneCore;
+                Core lc = LinphoneContext.instance().mLinphoneManager.getLc();
                 if (lc != null) {
                     Call c = lc.getCurrentCall();
                     if (c != null) {
@@ -228,12 +211,11 @@ public class LinphoneMiniActivity extends Activity {
 		 * this call will destroy native opengl renderer which is used by
 		 * androidVideoWindowImpl
 		 */
-                Core lc = Linphone.mLinphoneCore;
+                Core lc = LinphoneContext.instance().mLinphoneManager.getLc();
                 if (lc != null) {
                     Call c = lc.getCurrentCall();
                     if (c != null){
                         c.setNativeVideoWindowId(null);
-                        c.pause();
                     }
                 }
             }
@@ -248,14 +230,14 @@ public class LinphoneMiniActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        Core lc = Linphone.mLinphoneCore;
+        Core lc = LinphoneContext.instance().mLinphoneManager.getLc();
 
         if (lc != null) {
 
             Call c = lc.getCurrentCall();
 
             if (c != null){
-                if (Linphone.answered) {
+                if (LinphoneContext.answered) {
                     c.terminate();
                 } else {
                     c.decline(Reason.NotAnswered);
@@ -264,6 +246,8 @@ public class LinphoneMiniActivity extends Activity {
         }
 
         super.onBackPressed();
+
+        LinphoneContext.instance().killCurrentApp();
     }
 
     @Override
@@ -286,5 +270,7 @@ public class LinphoneMiniActivity extends Activity {
         LinphoneMiniManager.getInstance().callActivity = null;
 
 	    super.onDestroy();
+
+        LinphoneContext.instance().killCurrentApp();
     }
 }

@@ -2,7 +2,6 @@ package com.sip.linphone;
 
 import android.Manifest;
 import android.content.Context;
-import android.content.Intent;
 import android.net.sip.SipAudioCall;
 import android.net.sip.SipManager;
 import android.net.sip.SipProfile;
@@ -34,16 +33,38 @@ public class Linphone extends CordovaPlugin  {
     public SipAudioCall call = null;
 
     public static Boolean answered = false;
+    public static Boolean closeActivity = false;
+
+    private static final String TAG = "LinphoneSip";
+    public static final String APPID = "924566543835";
+
+    public static LinphoneContext lContext;
+
 
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
 
+        android.util.Log.i(TAG, "initialize cordova sip");
+
         this.cordova = cordova;
         mContext = cordova.getActivity().getApplicationContext();
-        mLinphoneManager = new LinphoneMiniManager(mContext);
+
+        if (LinphoneContext.isReady()) {
+            android.util.Log.i(TAG, "update context");
+            lContext = LinphoneContext.instance();
+            lContext.updateContext(mContext);
+        } else {
+            android.util.Log.i(TAG, "create new context");
+            lContext = new LinphoneContext(mContext, false);
+        }
+
+        mLinphoneManager = lContext.mLinphoneManager;
         mLinphoneCore = mLinphoneManager.getLc();
         mInstance = this;
+
+        mLinphoneCore.clearAllAuthInfo();
+        mLinphoneCore.clearProxyConfig();
     }
 
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext)
@@ -104,7 +125,8 @@ public class Linphone extends CordovaPlugin  {
         cordova.requestPermission(this, RC_MIC_PERM, Manifest.permission.RECORD_AUDIO);
       }
 
-      mLinphoneManager.login(username,password,domain,callbackContext);
+      mLinphoneManager.listenLogin(callbackContext);
+      mLinphoneManager.login(username, password, domain);
     }
 
     public void setPushNotification(final String appId, final String regId, final CallbackContext callbackContext) {
@@ -132,7 +154,8 @@ public class Linphone extends CordovaPlugin  {
 
     public static synchronized void call(final String address, final String displayName, final CallbackContext callbackContext) {
         try {
-            mLinphoneManager.call(address,displayName,callbackContext);
+            mLinphoneManager.listenCall(callbackContext);
+            mLinphoneManager.call(address, displayName);
         }catch (Exception e){
             Log.d("call error", e.getMessage());
         }
@@ -140,55 +163,46 @@ public class Linphone extends CordovaPlugin  {
 
     public static synchronized void hangup(final CallbackContext callbackContext) {
         try{
-            mLinphoneManager.hangup(callbackContext);
+            mLinphoneManager.listenCall(callbackContext);
+            mLinphoneManager.hangup();
         }catch (Exception e){
             Log.d("hangup error", e.getMessage());
         }
     }
 
-    public static synchronized void listenCall( final CallbackContext callbackContext){
+    public static synchronized void listenCall(final CallbackContext callbackContext) {
         mLinphoneManager.listenCall(callbackContext);
     }
 
-    public static synchronized void ensureRegistered( final CallbackContext callbackContext){
+    public static synchronized void ensureRegistered(final CallbackContext callbackContext) {
+        mLinphoneManager.listenCall(callbackContext);
         mLinphoneManager.ensureRegistered();
     }
 
-    public static synchronized void setStunServer(final String stunServer, final CallbackContext callbackContext){
-        mLinphoneManager.setStunServer(stunServer, callbackContext);
+    public static synchronized void setStunServer(final String stunServer, final CallbackContext callbackContext) {
+        mLinphoneManager.listenCall(callbackContext);
+        mLinphoneManager.setStunServer(stunServer);
     }
 
-    public static synchronized void disableStunServer(final CallbackContext callbackContext){
-        mLinphoneManager.disableStunServer(callbackContext);
+    public static synchronized void disableStunServer(final CallbackContext callbackContext) {
+        mLinphoneManager.listenCall(callbackContext);
+        mLinphoneManager.disableStunServer();
     }
 
-    public static synchronized void acceptCall( final String isAcceptCall, final CallbackContext callbackContext){
-        if ("true".equals(isAcceptCall)) {
-            Linphone.answered = false;
-            Intent intent = new Intent(mContext, LinphoneMiniActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            intent.putExtra("address", "");
-            intent.putExtra("displayName", "");
-            mLinphoneManager.showNotification(mInstance.cordova);
-            mLinphoneManager.previewCall(callbackContext);
-            mInstance.cordova.getActivity().startActivity(intent);
+    public static synchronized void acceptCall( final String isAcceptCall, final CallbackContext callbackContext) {
+        mLinphoneManager.listenCall(callbackContext);
+
+        if("true".equals(isAcceptCall)) {
+            mLinphoneManager.previewCall();
+
             callbackContext.success();
-        } else {
+        } else
             mLinphoneManager.terminateCall();
-        }
     }
 
     public static synchronized void videocall(final String address, final String displayName, final CallbackContext callbackContext) {
         try{
             Log.d("incall", address, displayName);
-            Linphone.answered = false;
-            mLinphoneManager.newOutgoingCall(address, displayName);
-            Intent intent = new Intent(mContext, LinphoneMiniActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            intent.putExtra("address", address);
-            intent.putExtra("displayName", displayName);
-            mContext.startActivity(intent);
-            Log.d("incall sukses");
             callbackContext.success();
         }catch (Exception e){
             Log.d("incall error", e.getMessage());
