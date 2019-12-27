@@ -3,7 +3,10 @@ package com.sip.linphone;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
+import org.json.JSONObject;
 import org.linphone.core.Core;
+
+import java.util.Map;
 
 
 public class LinphoneFirebaseMessaging extends FirebaseMessagingService {
@@ -41,6 +44,10 @@ public class LinphoneFirebaseMessaging extends FirebaseMessagingService {
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
         android.util.Log.d(TAG, "[Push Notification] Received");
+
+        Map<String, String> params = remoteMessage.getData();
+        JSONObject object = new JSONObject(params);
+        android.util.Log.e(TAG, "[Push Notification] message: " + object.toString());
 
         LinphoneContext.dispatchOnUIThread(mPushReceivedRunnable);
     }

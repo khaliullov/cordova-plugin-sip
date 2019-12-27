@@ -34,6 +34,8 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 
@@ -44,6 +46,9 @@ import org.linphone.core.Reason;
 import org.linphone.mediastream.Log;
 import org.linphone.mediastream.video.AndroidVideoWindowImpl;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 /**
  * @author Sylvain Berfini
  */
@@ -52,6 +57,9 @@ public class LinphoneMiniActivity extends Activity {
     private SurfaceView mCaptureView;
     private AndroidVideoWindowImpl androidVideoWindowImpl;
     private Button answerButton;
+    private Animation answerAnim;
+    private Animation unlockAnim;
+    private Timer unlockTimer;
 
     public static final int NOTIFICATION_ID = 45325623;
 
@@ -137,6 +145,40 @@ public class LinphoneMiniActivity extends Activity {
             }
         });
 
+        answerAnim = AnimationUtils.loadAnimation(this, R.getIdentifier("alpha", "anim", packageName));
+        answerAnim.setFillAfter(true);
+
+        unlockAnim = AnimationUtils.loadAnimation(this, R.getIdentifier("alpha_reverse", "anim", packageName));
+
+        Button unlockButton = (Button) findViewById(R.getIdentifier("unlockButton", "id", packageName));
+/*
+        unlockButton.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                Core lc = LinphoneContext.instance().mLinphoneManager.getLc();
+                if (lc != null) {
+                    Call call = lc.getCurrentCall();
+                    if (call != null) {
+                        int action = event.getAction();
+                        switch (action) {
+                            case MotionEvent.ACTION_DOWN:
+                                v.startAnimation(unlockAnim);
+                                call.sendDtmfs("12#");
+                                android.util.Log.d("LinphoneSip", "sending Dtmfs");
+                                break;
+                            case MotionEvent.ACTION_UP:
+                                call.cancelDtmfs();
+                                android.util.Log.d("LinphoneSip", "cancel Dtmfs");
+                                break;
+                        }
+                    }
+                }
+
+                return true;
+            }
+        });
+*/
+
         Intent i = getIntent();
         Bundle extras = i.getExtras();
         String address = extras.getString("address");
@@ -167,6 +209,8 @@ public class LinphoneMiniActivity extends Activity {
         if (lc != null) {
             Call call = lc.getCurrentCall();
             if (call != null) {
+                v.startAnimation(answerAnim);
+
                 CallParams params = call.getParams();
                 params.enableVideo(true);
                 lc.acceptCallWithParams(call, params);
@@ -180,6 +224,36 @@ public class LinphoneMiniActivity extends Activity {
 
     public void rejectAnswer(View v) {
         onBackPressed();
+    }
+
+    public void butUnlock(View v) {
+        if (unlockTimer != null) {
+            return;
+        }
+
+        Core lc = LinphoneContext.instance().mLinphoneManager.getLc();
+        if (lc != null) {
+            Call call = lc.getCurrentCall();
+            if (call != null) {
+                v.startAnimation(unlockAnim);
+                call.sendDtmfs("12#");
+                android.util.Log.d("LinphoneSip", "sending Dtmfs");
+
+                TimerTask lTask = new TimerTask() {
+                    @Override
+                    public void run() {
+                        call.cancelDtmfs();
+                        unlockTimer.cancel();
+                        unlockTimer = null;
+
+                        android.util.Log.d("LinphoneSip", "stop Dtmfs");
+                    }
+                };
+
+                unlockTimer = new Timer("Dtmfs scheduler");
+                unlockTimer.schedule(lTask, 0, 1000);
+            }
+        }
     }
 
     @Override
