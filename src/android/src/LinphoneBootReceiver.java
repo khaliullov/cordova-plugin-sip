@@ -15,6 +15,12 @@ public class LinphoneBootReceiver extends BroadcastReceiver {
         } else if (intent.getAction().equalsIgnoreCase(Intent.ACTION_BOOT_COMPLETED)) {
             new LinphoneContext(context, true);
             LinphoneContext.instance().start(true);
+
+            LinphoneContext.instance().runWorker();
+
+            if (LinphoneContext.instance().mLinphoneManager.loginFromStorage()) {
+                LinphoneContext.instance().mLinphoneManager.mPrefs.setPushNotificationEnabled(true);
+            }
         } else if (intent.getAction().equalsIgnoreCase(Intent.ACTION_MY_PACKAGE_REPLACED)) {
 
         }

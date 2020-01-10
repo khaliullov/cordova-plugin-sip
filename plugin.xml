@@ -40,6 +40,8 @@
     <source-file src="src/android/src/LinphoneFirebaseMessaging.java" target-dir="src/com/sip/linphone" />
     <source-file src="src/android/src/LinphonePreferences.java" target-dir="src/com/sip/linphone" />
     <source-file src="src/android/src/LinphoneBootReceiver.java" target-dir="src/com/sip/linphone" />
+    <source-file src="src/android/src/LinphoneStorage.java" target-dir="src/com/sip/linphone" />
+    <source-file src="src/android/src/LinphoneWorker.java" target-dir="src/com/sip/linphone" />
     <source-file src="src/android/res/layout/incall.xml" target-dir="res/layout" />
     <source-file src="src/android/res/raw/linphonerc_default" target-dir="res/raw" />
     <source-file src="src/android/res/raw/linphonerc_factory" target-dir="res/raw" />
@@ -49,6 +51,8 @@
     <source-file src="src/android/res/raw/oldphone_mono.wav" target-dir="res/raw" />
 
     <!-- drawable src/android/resources -->
+    <resource-file src="src/android/res/anim/alpha.xml" target="res/anim/alpha.xml" />
+    <resource-file src="src/android/res/anim/alpha_reverse.xml" target="res/anim/alpha_reverse.xml" />
     <resource-file src="src/android/res/drawable/icon.png" target="res/drawable/icon.png" />
     <resource-file src="src/android/res/drawable/video_overlay.png" target="res/drawable/video_overlay.png" />
     <resource-file src="src/android/res/drawable/btn_open.xml" target="res/drawable/btn_open.xml" />
@@ -61,6 +65,7 @@
       <merges target="cordova.plugins.sip" />
     </js-module>
     <config-file target="AndroidManifest.xml" parent="/*">
+      <uses-permission android:name="android.permission.VIBRATE" />
       <uses-permission android:name="android.permission.RECORD_AUDIO" />
       <uses-permission android:name="android.permission.CAMERA" />
       <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>

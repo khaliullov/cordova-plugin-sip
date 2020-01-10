@@ -39,6 +39,15 @@ public class LinphoneFirebaseMessaging extends FirebaseMessagingService {
         super.onNewToken(token);
 
         android.util.Log.d(TAG, "[Push Notification] Refreshed token: " + token);
+
+        LinphoneContext.dispatchOnUIThread(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        LinphonePreferences.instance().setPushNotificationRegistrationID(token);
+                    }
+                }
+        );
     }
 
     @Override

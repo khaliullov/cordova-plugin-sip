@@ -127,6 +127,8 @@ public class Linphone extends CordovaPlugin  {
 
       mLinphoneManager.listenLogin(callbackContext);
       mLinphoneManager.login(username, password, domain);
+      mLinphoneManager.setStunServer("stun4.l.google.com:19302");
+      mLinphoneManager.saveAuth(username, password, domain);
     }
 
     public void setPushNotification(final String appId, final String regId, final CallbackContext callbackContext) {

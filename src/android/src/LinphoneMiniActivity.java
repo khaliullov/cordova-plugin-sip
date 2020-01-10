@@ -251,7 +251,7 @@ public class LinphoneMiniActivity extends Activity {
                 };
 
                 unlockTimer = new Timer("Dtmfs scheduler");
-                unlockTimer.schedule(lTask, 0, 1000);
+                unlockTimer.schedule(lTask, 1500);
             }
         }
     }

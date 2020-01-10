@@ -13,7 +13,12 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
+
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class LinphoneContext {
     private static final String TAG = "LinphoneSip";
@@ -60,6 +65,10 @@ public class LinphoneContext {
 
         mLinphoneManager = new LinphoneMiniManager(context, isPush);
         mIsPush = isPush;
+
+        if (!isPush) {
+            runWorker();
+        }
     }
 
     public void updateContext(Context context) {
@@ -154,6 +163,16 @@ public class LinphoneContext {
                     appTask.finishAndRemoveTask();
                 }
             }
+        }
+    }
+
+    public void runWorker() {
+        try {
+            android.util.Log.i(TAG, "[Context Worker]: run");
+            PeriodicWorkRequest myWorkRequest = new PeriodicWorkRequest.Builder(LinphoneWorker.class, 15, TimeUnit.MINUTES).addTag(TAG).build();
+            WorkManager.getInstance(mContext).enqueueUniquePeriodicWork(TAG, ExistingPeriodicWorkPolicy.KEEP, myWorkRequest);
+        } catch (Exception e) {
+            android.util.Log.e(TAG, "[Context Worker]: " + e.getMessage());
         }
     }
 }
