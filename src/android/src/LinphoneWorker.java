@@ -25,10 +25,13 @@ public class LinphoneWorker extends Worker {
             android.util.Log.e(TAG, "[Linphone Worker] Starting context");
             new LinphoneContext(getApplicationContext(), true);
             LinphoneContext.instance().start(true);
-        }
 
-        if (LinphoneContext.instance().mLinphoneManager.loginFromStorage()) {
-            LinphoneContext.instance().mLinphoneManager.mPrefs.setPushNotificationEnabled(true);
+            if (LinphoneContext.instance().mLinphoneManager.loginFromStorage()) {
+                LinphoneContext.instance().mLinphoneManager.mPrefs.setPushNotificationEnabled(true);
+                LinphoneContext.instance().runForegraundService();
+            }
+        } else {
+
         }
 
         // Indicate whether the task finished successfully with the Result

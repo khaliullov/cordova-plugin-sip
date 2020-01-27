@@ -34,6 +34,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
@@ -57,6 +58,7 @@ public class LinphoneMiniActivity extends Activity {
     private SurfaceView mCaptureView;
     private AndroidVideoWindowImpl androidVideoWindowImpl;
     private Button answerButton;
+    private Button unlockButton;
     private Animation answerAnim;
     private Animation unlockAnim;
     private Timer unlockTimer;
@@ -150,7 +152,14 @@ public class LinphoneMiniActivity extends Activity {
 
         unlockAnim = AnimationUtils.loadAnimation(this, R.getIdentifier("alpha_reverse", "anim", packageName));
 
-        Button unlockButton = (Button) findViewById(R.getIdentifier("unlockButton", "id", packageName));
+        unlockButton = (Button) findViewById(R.getIdentifier("unlockButton", "id", packageName));
+
+        float alpha = 0.1f;
+        AlphaAnimation alphaUp = new AlphaAnimation(alpha, alpha);
+        alphaUp.setFillAfter(true);
+        unlockButton.setEnabled(false);
+        unlockButton.startAnimation(alphaUp);
+
 /*
         unlockButton.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -217,6 +226,14 @@ public class LinphoneMiniActivity extends Activity {
 
                 answerButton.setEnabled(false);
 
+                float alpha = 1f;
+                AlphaAnimation alphaUp = new AlphaAnimation(alpha, alpha);
+                alphaUp.setFillAfter(true);
+                unlockButton.setEnabled(false);
+                unlockButton.startAnimation(alphaUp);
+
+                unlockButton.setEnabled(true);
+
                 LinphoneContext.answered = true;
             }
         }
@@ -251,7 +268,7 @@ public class LinphoneMiniActivity extends Activity {
                 };
 
                 unlockTimer = new Timer("Dtmfs scheduler");
-                unlockTimer.schedule(lTask, 1500);
+                unlockTimer.schedule(lTask, 1600);
             }
         }
     }

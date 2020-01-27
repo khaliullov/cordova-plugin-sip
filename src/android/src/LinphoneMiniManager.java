@@ -23,6 +23,11 @@ import android.content.Context;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.media.AudioManager;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
+import android.os.Build;
 import android.os.Vibrator;
 
 import androidx.annotation.NonNull;
@@ -78,6 +83,10 @@ import java.util.TimerTask;
 public class LinphoneMiniManager implements CoreListener {
     private static final String TAG = "LinphoneSip";
     private static final int RANDOM_PORT = -1;
+    private static final int SIP_PORT = RANDOM_PORT;
+
+    public static Boolean flToken = false;
+
     public static LinphoneMiniManager mInstance;
     public static Context mContext;
     public static Core mCore;
@@ -121,6 +130,8 @@ public class LinphoneMiniManager implements CoreListener {
 
             mCore.addListener(this);
 
+            mCore.enableIpv6(false);
+
             if (isPush) {
                 android.util.Log.w(TAG,
                         "[Manager] We are here because of a received push notification, enter background mode before starting the Core");
@@ -140,6 +151,34 @@ public class LinphoneMiniManager implements CoreListener {
             mInstance = this;
 
             if (!isPush) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    ConnectivityManager connectivityManager = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+                    connectivityManager.registerNetworkCallback(
+                            new NetworkRequest.Builder()
+                                    .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+                                    .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                                    .build(),
+                            new ConnectivityManager.NetworkCallback() {
+                                @Override
+                                public void onLost(Network network) {
+                                    if (mCore != null) {
+                                        android.util.Log.d(TAG, "connection lost");
+                                        mCore.refreshRegisters();
+                                    }
+                                }
+
+                                @Override
+                                public void onAvailable(Network network) {
+                                    if (mCore != null) {
+                                        android.util.Log.d(TAG, "connection check - refreshRegisters");
+                                        mCore.refreshRegisters();
+                                    }
+                                }
+                            }
+                    );
+                }
+
                 Log.i(
                         "[Push Notification] firebase push sender id ");
                 try {
@@ -245,8 +284,8 @@ public class LinphoneMiniManager implements CoreListener {
         String package_name = mContext.getPackageName();
         Resources resources = mContext.getResources();
 
-        LinphoneMiniUtils.copyIfNotExist(mContext, resources.getIdentifier("oldphone_mono", "raw", package_name), basePath + "/oldphone_mono.wav");
-        LinphoneMiniUtils.copyIfNotExist(mContext, resources.getIdentifier("ringback", "raw", package_name), basePath + "/ringback.wav");
+        LinphoneMiniUtils.copyIfNotExist(mContext, resources.getIdentifier("oldphone_mono", "raw", package_name), basePath + "/oldphone_mono.wav", true);
+        LinphoneMiniUtils.copyIfNotExist(mContext, resources.getIdentifier("ringback", "raw", package_name), basePath + "/ringback.wav", true);
         LinphoneMiniUtils.copyIfNotExist(mContext, resources.getIdentifier("linphonerc_default", "raw", package_name), basePath + "/.linphonerc");
         LinphoneMiniUtils.copyFromPackage(mContext, resources.getIdentifier("linphonerc_factory", "raw", package_name), new File(basePath + "/linphonerc").getName());
         LinphoneMiniUtils.copyIfNotExist(mContext, resources.getIdentifier("lpconfig", "raw", package_name), basePath + "/lpconfig.xsd");
@@ -295,7 +334,6 @@ public class LinphoneMiniManager implements CoreListener {
 
         if (regId != "") {
             // Add push infos to exisiting proxy configs
-            android.util.Log.d(TAG, "[SET Push Notification] getProxyConfigList().length " + core.getProxyConfigList().length);
             if (core.getProxyConfigList().length > 0) {
                 for (ProxyConfig lpc : core.getProxyConfigList()) {
                     if (lpc == null) continue;
@@ -335,6 +373,10 @@ public class LinphoneMiniManager implements CoreListener {
                         "[SET Push Notification] Refreshing registers to ensure token is up to date: "
                                 + regId);
                 core.refreshRegisters();
+            } else {
+                android.util.Log.d(TAG, "[Push Notification] enable token flag");
+                flToken = true;
+                loginFromStorage();
             }
         } else {
             if (core.getProxyConfigList().length > 0) {
@@ -422,6 +464,9 @@ public class LinphoneMiniManager implements CoreListener {
 
     public void setStunServer(String stunServer) {
         ProxyConfig mProxyConfig = mCore.getDefaultProxyConfig();
+        if (mProxyConfig == null) {
+            return;
+        }
         mProxyConfig.edit();
         NatPolicy natPolicy = mProxyConfig.getNatPolicy();
         if (natPolicy == null) {
@@ -481,7 +526,15 @@ public class LinphoneMiniManager implements CoreListener {
         android.util.Log.i(TAG, "[Mini manager] login from storage " + username);
 
         if (username != "") {
+            android.util.Log.i(TAG, "[Mini manager] logining from storage");
+
             login(username, mStorage.getPassword(), mStorage.getDomain());
+
+            String stun = mStorage.getStun();
+
+            if (stun != "") {
+                setStunServer(stun);
+            }
 
             return true;
         }
@@ -489,37 +542,41 @@ public class LinphoneMiniManager implements CoreListener {
         return false;
     }
 
-    public void saveAuth(String username, String password, String domain) {
+    public void saveAuth(String username, String password, String domain, String stun) {
         mStorage.setUsername(username);
         mStorage.setPassword(password);
         mStorage.setDomain(domain);
+        mStorage.setStun(stun);
+    }
+
+    public void clearRegistration() {
+        mCore.clearAllAuthInfo();
+        mCore.clearProxyConfig();
     }
 
     public void login(String username, String password, String domain) {
+        clearRegistration();
+
         Factory lcFactory = Factory.instance();
 
-        mCore.clearAllAuthInfo();
-        mCore.clearProxyConfig();
-
         Transports transports = mCore.getTransports();
-        transports.setUdpPort(RANDOM_PORT);
-        transports.setTcpPort(RANDOM_PORT);
+        transports.setUdpPort(SIP_PORT);
+        transports.setTcpPort(SIP_PORT);
         transports.setTlsPort(RANDOM_PORT);
         mCore.setTransports(transports);
 
-        Address address = lcFactory.createAddress("sip:" + username + "@" + domain);
+        android.util.Log.d(TAG, "auth full: " + username + " " + password + " " + domain);
 
-        username = address.getUsername();
-        domain = address.getDomain();
-        int port = address.getPort();
+        Address address = lcFactory.createAddress("sip:" + username);
 
-        android.util.Log.d(TAG, "auth: " + username + " " + password + " " + domain);
+        Address proxyAddress = lcFactory.createAddress("sip:" + domain);
 
-        address = lcFactory.createAddress("sip:" + username + "@" + domain);
-        Address proxyAddress = Factory.instance().createAddress("sip:" + domain);
+        Integer port = proxyAddress.getPort();
+
+        android.util.Log.d(TAG, "proxyAddress: " + proxyAddress.asStringUriOnly());
 
         if (password != null) {
-            mCore.addAuthInfo(lcFactory.createAuthInfo(username, username, password, (String)null, (String)null, domain));
+            mCore.addAuthInfo(lcFactory.createAuthInfo(address.getUsername(), address.getUsername(), password, (String)null, (String)null, address.getDomain()));
         }
 
         ProxyConfig proxyCfg = mCore.createProxyConfig();
@@ -529,21 +586,18 @@ public class LinphoneMiniManager implements CoreListener {
         proxyCfg.done();
 
         if (port != 0) {
-            proxyCfg.setServerAddr(domain + ':' + port);
-            proxyCfg.setRoute(domain);
-        } else {
-            proxyCfg.setServerAddr(domain);
+            proxyCfg.setRoute(proxyAddress.getDomain() + ':' + port);
         }
+
+        android.util.Log.d(TAG, "auth: " + address.getUsername() + " " + password + " " + address.getDomain() + " - " + proxyAddress.asStringUriOnly());
 
         proxyCfg.enableRegister(true);
         mCore.addProxyConfig(proxyCfg);
         mCore.setDefaultProxyConfig(proxyCfg);
 
-        mPrefs.setPushNotificationEnabled(true);
+        flToken = true;
 
         android.util.Log.d(TAG, "logined");
-
-        mPrefs.setPushNotificationEnabled(true);
     }
 
     private NatPolicy getOrCreateNatPolicy() {
@@ -558,9 +612,11 @@ public class LinphoneMiniManager implements CoreListener {
 
     public void logout() {
         ProxyConfig[] prxCfgs = mCore.getProxyConfigList();
-        final ProxyConfig proxyCfg = prxCfgs[0];
-        mCore.removeProxyConfig(proxyCfg);
-        android.util.Log.d(TAG, "logouted");
+        if (prxCfgs.length > 0) {
+            final ProxyConfig proxyCfg = prxCfgs[0];
+            mCore.removeProxyConfig(proxyCfg);
+            android.util.Log.d(TAG, "logouted");
+        }
     }
 
     @Override
@@ -574,8 +630,17 @@ public class LinphoneMiniManager implements CoreListener {
     public void onRegistrationStateChanged(Core core, ProxyConfig proxyConfig, RegistrationState registrationState, String s) {
         if (registrationState == RegistrationState.Ok) {
             android.util.Log.d(TAG, "RegistrationSuccess");
+
+            if (flToken) {
+                mPrefs.setPushNotificationEnabled(true);
+                flToken = false;
+            }
         } else if (registrationState == RegistrationState.Failed) {
             android.util.Log.d(TAG, "RegistrationFailed:: " + s);
+        } else if (registrationState == RegistrationState.Cleared) {
+            android.util.Log.d(TAG, "RegistrationCleared:: " + s);
+        } else if (registrationState == RegistrationState.None) {
+            android.util.Log.d(TAG, "RegistrationNone:: " + s);
         }
 
         if (mLoginCallbackContext != null) {
@@ -583,6 +648,10 @@ public class LinphoneMiniManager implements CoreListener {
                 mLoginCallbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, "RegistrationSuccess"));
             } else if (registrationState == RegistrationState.Failed) {
                 mLoginCallbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, "RegistrationFailed:: " + s));
+            } else if (registrationState == RegistrationState.Cleared) {
+                android.util.Log.d(TAG, "RegistrationCleared:: " + s);
+            } else if (registrationState == RegistrationState.None) {
+                android.util.Log.d(TAG, "RegistrationNone:: " + s);
             }
         }
     }
@@ -629,8 +698,6 @@ public class LinphoneMiniManager implements CoreListener {
                 mCallbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, "Incoming"));
             } else if (state == State.End) {
                 mCallbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, "End"));
-
-
             } else if (state == State.Error) {
                 mCallbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, "Error"));
 
@@ -740,7 +807,6 @@ public class LinphoneMiniManager implements CoreListener {
     public void onConfiguringStatus(Core core, ConfiguringState configuringState, String s) {
         if (configuringState == ConfiguringState.Successful) {
             android.util.Log.i(TAG,"[Context] Configuring state is Successful");
-            mPrefs.setPushNotificationEnabled(true);
         } else if (configuringState == ConfiguringState.Failed) {
             android.util.Log.i(TAG,"[Context] Configuring state is Failed");
         } else if (configuringState == ConfiguringState.Skipped) {

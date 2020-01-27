@@ -8,11 +8,14 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.Settings;
 import android.util.Log;
 
+import androidx.core.content.ContextCompat;
 import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
@@ -22,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 public class LinphoneContext {
     private static final String TAG = "LinphoneSip";
+    public static int ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE = 2323;
 
     private static final Handler sHandler = new Handler(Looper.getMainLooper());
 
@@ -32,6 +36,7 @@ public class LinphoneContext {
     private Context mContext;
 
     private boolean mIsPush = false;
+    private static boolean hasForeground = false;
 
     public LinphoneMiniManager mLinphoneManager;
 
@@ -100,7 +105,7 @@ public class LinphoneContext {
                         mLinphoneManager.ensureRegistered();
 
                         Intent intent = new Intent(mContext, LinphoneMiniActivity.class);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);
                         intent.putExtra("address", "");
                         intent.putExtra("displayName", "");
 
@@ -112,6 +117,15 @@ public class LinphoneContext {
                     }
                 }
         );
+    }
+
+    public void runForegraundService() {
+        if (!hasForeground) {
+            Intent serviceIntent = new Intent(mContext, LinphoneForegroundService.class);
+            ContextCompat.startForegroundService(mContext, serviceIntent);
+
+            hasForeground = true;
+        }
     }
 
     public void showNotification() {
@@ -173,6 +187,28 @@ public class LinphoneContext {
             WorkManager.getInstance(mContext).enqueueUniquePeriodicWork(TAG, ExistingPeriodicWorkPolicy.KEEP, myWorkRequest);
         } catch (Exception e) {
             android.util.Log.e(TAG, "[Context Worker]: " + e.getMessage());
+        }
+    }
+
+    public void checkPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            if (!Settings.canDrawOverlays(mContext)) {
+                dispatchOnUIThread(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    Intent localIntent = new Intent("android.settings.action.MANAGE_OVERLAY_PERMISSION");
+                                    localIntent.setData(Uri.parse("package:" + mContext.getPackageName()));
+                                    localIntent.setFlags(268435456);
+                                    mContext.startActivity(localIntent);
+                                } catch (Exception e){
+                                    android.util.Log.d(TAG, e.getMessage());
+                                }
+                            }
+                        }
+                );
+            }
         }
     }
 }

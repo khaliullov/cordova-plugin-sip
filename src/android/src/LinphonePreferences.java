@@ -110,7 +110,7 @@ public class LinphonePreferences {
         getConfig().setBool("app", "push_notification", enable);
 
         Core core = getLc();
-        if (core == null) {
+        if (core == null || LinphoneContext.instance().mLinphoneManager == null) {
             return;
         }
 
@@ -125,6 +125,16 @@ public class LinphonePreferences {
         } else {
             LinphoneContext.instance().mLinphoneManager.setPushNotification("", "");
         }
+    }
+
+    public boolean hasPowerSaverDialogBeenPrompted() {
+        if (getConfig() == null) return false;
+        return getConfig().getBool("app", "android_power_saver_dialog", false);
+    }
+
+    public void powerSaverDialogPrompted(boolean b) {
+        if (getConfig() == null) return;
+        getConfig().setBool("app", "android_power_saver_dialog", b);
     }
 
     private ProxyConfig getProxyConfig(int n) {

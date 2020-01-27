@@ -44,4 +44,13 @@ public class LinphoneStorage {
     public String getDomain() {
         return pref.getString("domain", "");
     }
+
+    public void setStun(String stun) {
+        editor.putString("stun", stun);
+        editor.commit();
+    }
+
+    public String getStun() {
+        return pref.getString("stun", "");
+    }
 }

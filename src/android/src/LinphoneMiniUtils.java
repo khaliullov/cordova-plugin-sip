@@ -29,14 +29,18 @@ import java.io.InputStream;
  * @author Sylvain Berfini
  */
 public class LinphoneMiniUtils {
-	public static void copyIfNotExist(Context context, int ressourceId, String target) throws IOException {
+	public static void copyIfNotExist(Context context, int ressourceId, String target, Boolean update) throws IOException {
 		File lFileToCopy = new File(target);
 
 		InputStream lInputStream = context.getResources().openRawResource(ressourceId);
 
-		if (!lFileToCopy.exists() || lFileToCopy.length() != lInputStream.available()) {
+		if (!lFileToCopy.exists() || (update && lFileToCopy.length() != lInputStream.available())) {
 			copyFromPackage(context, ressourceId, lFileToCopy.getName());
 		}
+	}
+
+	public static void copyIfNotExist(Context context, int ressourceId, String target) throws IOException {
+		copyIfNotExist(context, ressourceId, target, false);
 	}
 
 	public static void copyFromPackage(Context context, int ressourceId, String target) throws IOException {
