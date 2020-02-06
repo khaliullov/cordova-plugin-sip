@@ -143,5 +143,14 @@ module.exports =
             "sendDtmf",
             [number]
         );
-    }
+    },
+    sendLogcat: function (successCallback, errorCallback) {
+        cordova.exec(
+            successCallback,
+            errorCallback,
+            "Linphone",
+            "sendLogcat",
+            []
+        );
+    },
 };

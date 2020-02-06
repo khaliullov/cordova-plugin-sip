@@ -1,5 +1,6 @@
 package com.sip.linphone;
 
+import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -7,7 +8,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Resources;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
@@ -15,23 +16,42 @@ import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
 
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import io.ionic.starter.MainActivity;
+import io.ionic.starter.R;
 
 public class LinphoneContext {
     private static final String TAG = "LinphoneSip";
     public static int ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE = 2323;
+    public static final int iconColor = 0xFF4A47EC;
+
+    public static final String CHANNEL_ID = "EvolifeSipService";
+    public static final String SERVICE_CHANNEL_ID = "EvolifeSipService";
+    public static boolean channelInited = false;
+    public static final int NOTIFICATION_ID = 45325623;
 
     private static final Handler sHandler = new Handler(Looper.getMainLooper());
 
     private static LinphoneContext sInstance = null;
 
     public static boolean answered = false;
+
+    public static boolean isConnected = false;
+    public static boolean isCall = false;
 
     private Context mContext;
 
@@ -111,59 +131,115 @@ public class LinphoneContext {
 
                         mLinphoneManager.previewCall();
 
-                        showNotification();
-
                         mContext.startActivity(intent);
                     }
                 }
         );
     }
 
+    public static boolean hasForeground() {
+        return hasForeground;
+    }
+
     public void runForegraundService() {
         if (!hasForeground) {
             Intent serviceIntent = new Intent(mContext, LinphoneForegroundService.class);
+            serviceIntent.setAction(LinphoneForegroundService.ACTION_START_FOREGROUND_SERVICE);
             ContextCompat.startForegroundService(mContext, serviceIntent);
 
             hasForeground = true;
         }
     }
 
+    public void stopForegraundService() {
+        if (hasForeground) {
+            Intent serviceIntent = new Intent(mContext, LinphoneForegroundService.class);
+            serviceIntent.setAction(LinphoneForegroundService.ACTION_STOP_FOREGROUND_SERVICE);
+            ContextCompat.startForegroundService(mContext, serviceIntent);
+
+            hasForeground = false;
+        }
+    }
+
     public void showNotification() {
         NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
 
-        String CHANNEL_ID = "cordova-plugin-linphone-sip";
+        notificationManager.notify(NOTIFICATION_ID, isCall ? getCallNotification(mContext) : getServiceNotification(mContext, isConnected));
+        android.util.Log.d(TAG, "StateChanged " + (isCall ? "getCallNotification" : "getServiceNotification"));
 
-        Intent resultIntent = new Intent(mContext.getApplicationContext(), LinphoneMiniActivity.class);
-        resultIntent.putExtra("address", "");
-        resultIntent.putExtra("displayName", "");
-        resultIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
-        PendingIntent resultPendingIntent = PendingIntent.getActivity(mContext, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
+    }
 
-        Resources res  = mContext.getResources();
-        String pkgName = mContext.getPackageName();
+    public static Notification getServiceNotification(Context context, boolean connected) {
+        Intent notificationIntent = new Intent(context, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(context,0, notificationIntent, 0);
 
-        Notification.Builder builder = new Notification.Builder(mContext)
-                .setContentTitle("Входяший звонок домофона")
-                .setSmallIcon(res.getIdentifier("icon", "drawable", pkgName))
-                .setContentIntent(resultPendingIntent);
-
-        int color = 0xFF4A47EC;
+        Notification.Builder builder =  new Notification.Builder(context)
+                .setContentTitle("Домофон")
+                .setContentText(connected ? "подключен" : "не подключен")
+                .setSmallIcon(R.drawable.icon)
+                .setContentIntent(pendingIntent)
+                .setOnlyAlertOnce(true);
 
         if (Build.VERSION.SDK_INT >= 21) {
-            builder.setColor(color);
+            builder.setColor(iconColor);
         }
 
         if (Build.VERSION.SDK_INT >= 26){
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID,"EVO Life sip", NotificationManager.IMPORTANCE_DEFAULT);
-            notificationManager.createNotificationChannel(channel);
+            createNotificationChannel(context);
+            builder.setChannelId(SERVICE_CHANNEL_ID);
+        }
+
+        builder.setPriority(Notification.PRIORITY_MIN);
+
+        return builder.build();
+    }
+
+    public static Notification getCallNotification(Context context) {
+        android.util.Log.d(TAG, "StateChanged getCallNotification");
+        Intent resultIntent = new Intent(context.getApplicationContext(), LinphoneMiniActivity.class);
+        resultIntent.putExtra("address", "");
+        resultIntent.putExtra("displayName", "");
+        resultIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+        PendingIntent resultPendingIntent = PendingIntent.getActivity(context, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
+
+        Notification.Builder builder = new Notification.Builder(context)
+                .setContentTitle("Домофон")
+                .setContentText("Входяший звонок домофона")
+                .setSmallIcon(R.drawable.icon)
+                .setContentIntent(resultPendingIntent);
+
+        if (Build.VERSION.SDK_INT >= 21) {
+            builder.setColor(iconColor);
+        }
+
+        if (Build.VERSION.SDK_INT >= 26){
+            createNotificationChannel(context);
             builder.setChannelId(CHANNEL_ID);
         }
 
         builder.setPriority(Notification.PRIORITY_MAX);
 
-        Notification notification = builder.build();
+        return builder.build();
+    }
 
-        notificationManager.notify(LinphoneMiniActivity.NOTIFICATION_ID, notification);
+    private static void createNotificationChannel(Context context) {
+        if (!channelInited && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationManager manager = context.getSystemService(NotificationManager.class);
+
+            NotificationChannel serviceChannel = new NotificationChannel(
+                    SERVICE_CHANNEL_ID,
+                    "Evo Life Service Channel",
+                    NotificationManager.IMPORTANCE_MIN
+            );
+            manager.createNotificationChannel(serviceChannel);
+
+            NotificationChannel callChannel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "Evo Life Call Channel",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            manager.createNotificationChannel(callChannel);
+        }
     }
 
     public void killCurrentApp() {
@@ -210,5 +286,65 @@ public class LinphoneContext {
                 );
             }
         }
+    }
+    public void sendLogcatMail(final Activity context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (context.checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(context, new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+            }
+        }
+
+        String logString = new String("");
+
+        try {
+            Process process = Runtime.getRuntime().exec("logcat -d");
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            StringBuilder log = new StringBuilder();
+            String line;
+
+            while((line = bufferedReader.readLine()) != null)
+            {
+                log.append(line);
+                log.append("\n");
+            }
+
+            logString = log.toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        LinphoneStorage storage = new LinphoneStorage(mContext);
+        String username = storage.getUsername();
+
+        android.util.Log.d(TAG, "run send mail " + username);
+
+        Intent emailIntent = new Intent(Intent.ACTION_SEND);
+        emailIntent.setType("vnd.android.cursor.dir/email");
+        String to[] = {"k.bulaev@simdev.ru"};
+        emailIntent.putExtra(Intent.EXTRA_EMAIL, to);
+        emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Logcat " + username);
+        emailIntent.putExtra(Intent.EXTRA_TEXT, logString);
+
+        context.startActivity(Intent.createChooser(emailIntent , "Отправить logcat письмом..."));
+    }
+
+    public static String convertStreamToString(InputStream is) throws Exception {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        StringBuilder sb = new StringBuilder();
+        String line = null;
+        while ((line = reader.readLine()) != null) {
+            sb.append(line).append("\n");
+        }
+        reader.close();
+        return sb.toString();
+    }
+
+    public static String getStringFromFile (String filePath) throws Exception {
+        File fl = new File(filePath);
+        FileInputStream fin = new FileInputStream(fl);
+        String ret = convertStreamToString(fin);
+        //Make sure you close all streams.
+        fin.close();
+        return ret;
     }
 }

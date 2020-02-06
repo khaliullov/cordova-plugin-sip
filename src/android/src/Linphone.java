@@ -13,7 +13,6 @@ import org.apache.cordova.CordovaWebView;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.linphone.core.Core;
-import org.linphone.core.ProxyConfig;
 import org.linphone.mediastream.Log;
 
 import java.util.Timer;
@@ -79,6 +78,9 @@ public class Linphone extends CordovaPlugin  {
             case "logout":
                 logout(callbackContext);
                 return true;
+            case "sendLogcat":
+                sendLogcat();
+                return true;
             case "call":
                 call(args.getString(0), args.getString(1), callbackContext);
                 return true;
@@ -123,25 +125,24 @@ public class Linphone extends CordovaPlugin  {
     }
 
     public void login(final String username, final String password, final String domain, final CallbackContext callbackContext) {
-      if (!cordova.hasPermission(Manifest.permission.RECORD_AUDIO)) {
-        cordova.requestPermission(this, RC_MIC_PERM, Manifest.permission.RECORD_AUDIO);
-      }
+        if (!cordova.hasPermission(Manifest.permission.RECORD_AUDIO)) {
+            cordova.requestPermission(this, RC_MIC_PERM, Manifest.permission.RECORD_AUDIO);
+        }
 
-      LinphoneContext.instance().checkPermission();
+        if (powerManager) {
+            android.util.Log.d(TAG, "SHOW DIAOL");
+            LinphoneDeviceUtils.displayDialogIfDeviceHasPowerManagerThatCouldPreventPushNotifications(cordova.getActivity());
+            powerManager = false;
+        }
 
-      mLinphoneManager.listenLogin(callbackContext);
-      mLinphoneManager.clearRegistration();
-      mLinphoneManager.login(username, password, domain);
-      mLinphoneManager.setStunServer("stun4.l.google.com:19302");
-      mLinphoneManager.saveAuth(username, password, domain, "stun4.l.google.com:19302");
+        cordova.getThreadPool().execute(() -> {
+            mLinphoneManager.listenLogin(callbackContext);
+            mLinphoneManager.clearRegistration();
+            mLinphoneManager.login(username, password, domain);
+            mLinphoneManager.saveAuth(username, password, domain);
 
-      LinphoneContext.instance().runForegraundService();
-
-      if (powerManager) {
-          android.util.Log.d(TAG, "SHOW DIAOL");
-          LinphoneDeviceUtils.displayDialogIfDeviceHasPowerManagerThatCouldPreventPushNotifications(cordova.getActivity());
-          powerManager = false;
-      }
+            LinphoneContext.instance().runForegraundService();
+        });
     }
 
     public void setPushNotification(final String appId, final String regId, final CallbackContext callbackContext) {
@@ -153,12 +154,21 @@ public class Linphone extends CordovaPlugin  {
 
     }
 
+    public void sendLogcat() {
+        try {
+            LinphoneContext.instance().sendLogcatMail(cordova.getActivity());
+        } catch (Exception e){
+            Log.d("call error", e.getMessage());
+        }
+    }
+
     public static synchronized void logout(final CallbackContext callbackContext) {
         try{
             Log.d("logout");
-            ProxyConfig[] prxCfgs = mLinphoneManager.getLc().getProxyConfigList();
-            final ProxyConfig proxyCfg = prxCfgs[0];
-            mLinphoneManager.getLc().removeProxyConfig(proxyCfg);
+            mLinphoneManager.logout();
+            mLinphoneManager.saveAuth("", "", "");
+            mLinphoneManager.saveStunServer("");
+            LinphoneContext.instance().stopForegraundService();
             Log.d("logout sukses");
             callbackContext.success();
         }catch (Exception e){
@@ -171,7 +181,7 @@ public class Linphone extends CordovaPlugin  {
         try {
             mLinphoneManager.listenCall(callbackContext);
             mLinphoneManager.call(address, displayName);
-        }catch (Exception e){
+        } catch (Exception e){
             Log.d("call error", e.getMessage());
         }
     }
@@ -194,14 +204,19 @@ public class Linphone extends CordovaPlugin  {
         mLinphoneManager.ensureRegistered();
     }
 
-    public static synchronized void setStunServer(final String stunServer, final CallbackContext callbackContext) {
-        mLinphoneManager.listenCall(callbackContext);
-        mLinphoneManager.setStunServer(stunServer);
+    public void setStunServer(final String stunServer, final CallbackContext callbackContext) {
+        cordova.getThreadPool().execute(() -> {
+            mLinphoneManager.listenCall(callbackContext);
+            mLinphoneManager.setStunServer(stunServer);
+            mLinphoneManager.saveStunServer(stunServer);
+        });
     }
 
     public static synchronized void disableStunServer(final CallbackContext callbackContext) {
+
         mLinphoneManager.listenCall(callbackContext);
         mLinphoneManager.disableStunServer();
+        mLinphoneManager.saveStunServer("");
     }
 
     public static synchronized void acceptCall( final String isAcceptCall, final CallbackContext callbackContext) {

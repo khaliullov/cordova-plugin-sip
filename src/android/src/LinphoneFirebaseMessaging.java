@@ -8,7 +8,6 @@ import org.linphone.core.Core;
 
 import java.util.Map;
 
-
 public class LinphoneFirebaseMessaging extends FirebaseMessagingService {
     private static final String TAG = "LinphoneSip";
 
@@ -56,7 +55,6 @@ public class LinphoneFirebaseMessaging extends FirebaseMessagingService {
 
         Map<String, String> params = remoteMessage.getData();
         JSONObject object = new JSONObject(params);
-        android.util.Log.e(TAG, "[Push Notification] message: " + object.toString());
 
         LinphoneContext.dispatchOnUIThread(mPushReceivedRunnable);
     }

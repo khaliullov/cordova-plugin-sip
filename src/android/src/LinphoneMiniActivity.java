@@ -21,7 +21,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 import android.app.Activity;
 import android.app.KeyguardManager;
-import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -62,8 +61,6 @@ public class LinphoneMiniActivity extends Activity {
     private Animation answerAnim;
     private Animation unlockAnim;
     private Timer unlockTimer;
-
-    public static final int NOTIFICATION_ID = 45325623;
 
     @Override
     protected void onNewIntent(Intent intent) {
@@ -154,11 +151,11 @@ public class LinphoneMiniActivity extends Activity {
 
         unlockButton = (Button) findViewById(R.getIdentifier("unlockButton", "id", packageName));
 
-        float alpha = 0.1f;
-        AlphaAnimation alphaUp = new AlphaAnimation(alpha, alpha);
-        alphaUp.setFillAfter(true);
-        unlockButton.setEnabled(false);
-        unlockButton.startAnimation(alphaUp);
+        //float alpha = 0.1f;
+        //AlphaAnimation alphaUp = new AlphaAnimation(alpha, alpha);
+        //alphaUp.setFillAfter(true);
+        //unlockButton.setEnabled(false);
+        //unlockButton.startAnimation(alphaUp);
 
 /*
         unlockButton.setOnTouchListener(new View.OnTouchListener() {
@@ -202,11 +199,6 @@ public class LinphoneMiniActivity extends Activity {
         LinphoneMiniManager.getInstance().callActivity = this;
     }
 
-    private void hideNotification() {
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.cancel(NOTIFICATION_ID);
-    }
-
     private void fixZOrder(SurfaceView video, SurfaceView preview) {
         video.setZOrderOnTop(false);
         preview.setZOrderOnTop(true);
@@ -222,17 +214,20 @@ public class LinphoneMiniActivity extends Activity {
 
                 CallParams params = call.getParams();
                 params.enableVideo(true);
-                lc.acceptCallWithParams(call, params);
+                params.enableAudio(true);
+                call.acceptWithParams(params);
+                call.acceptUpdate(params);
+                call.setParams(params);
 
                 answerButton.setEnabled(false);
 
                 float alpha = 1f;
                 AlphaAnimation alphaUp = new AlphaAnimation(alpha, alpha);
                 alphaUp.setFillAfter(true);
-                unlockButton.setEnabled(false);
-                unlockButton.startAnimation(alphaUp);
+                //unlockButton.setEnabled(false);
+                //unlockButton.startAnimation(alphaUp);
 
-                unlockButton.setEnabled(true);
+                //unlockButton.setEnabled(true);
 
                 LinphoneContext.answered = true;
             }
@@ -343,8 +338,6 @@ public class LinphoneMiniActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        hideNotification();
-
         mCaptureView = null;
 
         if (mVideoView != null) {

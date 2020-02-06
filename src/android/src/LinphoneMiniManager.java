@@ -111,13 +111,15 @@ public class LinphoneMiniManager implements CoreListener {
         mContext = c;
         mVibrator = (Vibrator) mContext.getSystemService(Context.VIBRATOR_SERVICE);
 
-        Factory.instance().setDebugMode(true, "Linphone Mini");
+        Factory.instance().setDebugMode(true, TAG /*"Linphone Mini"*/);
 
         android.util.Log.d(TAG, "Start initializing Linphone");
 
         mPrefs = LinphonePreferences.instance();
 
         mStorage = new LinphoneStorage(mContext);
+
+        mAudioManager = ((AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE));
 
         try {
             String basePath = mContext.getFilesDir().getAbsolutePath();
@@ -162,7 +164,7 @@ public class LinphoneMiniManager implements CoreListener {
                             new ConnectivityManager.NetworkCallback() {
                                 @Override
                                 public void onLost(Network network) {
-                                    if (mCore != null) {
+                                    if (mCore != null && LinphoneContext.hasForeground()) {
                                         android.util.Log.d(TAG, "connection lost");
                                         mCore.refreshRegisters();
                                     }
@@ -170,7 +172,7 @@ public class LinphoneMiniManager implements CoreListener {
 
                                 @Override
                                 public void onAvailable(Network network) {
-                                    if (mCore != null) {
+                                    if (mCore != null && LinphoneContext.hasForeground()) {
                                         android.util.Log.d(TAG, "connection check - refreshRegisters");
                                         mCore.refreshRegisters();
                                     }
@@ -499,6 +501,7 @@ public class LinphoneMiniManager implements CoreListener {
         if (call != null){
             CallParams params = call.getParams();
             params.enableVideo(true);
+            params.enableAudio(true);
             mCore.acceptCallWithParams(call, params);
         }
     }
@@ -506,9 +509,23 @@ public class LinphoneMiniManager implements CoreListener {
     public void previewCall() {
         Call call = mCore.getCurrentCall();
         if (call != null){
-            CallParams params = call.getParams();
-            params.enableVideo(true);
-            mCore.acceptEarlyMediaWithParams(call, params);
+            String agent = call.getRemoteUserAgent();
+
+            android.util.Log.e(TAG, "agent: " + agent);
+
+            if (agent.matches("(.*)Rubetek(.*)")) {
+                android.util.Log.e(TAG, "agent: RUBETEK CALL");
+                CallParams params = call.getParams();
+                params.enableVideo(true);
+                params.enableAudio(false);
+                call.acceptEarlyMediaWithParams(params);
+            } else {
+                CallParams params = call.getParams();
+                params.enableVideo(true);
+                call.acceptEarlyMediaWithParams(params);
+                params.enableAudio(false);
+                call.setParams(params);
+            }
         }
     }
 
@@ -542,10 +559,13 @@ public class LinphoneMiniManager implements CoreListener {
         return false;
     }
 
-    public void saveAuth(String username, String password, String domain, String stun) {
+    public void saveAuth(String username, String password, String domain) {
         mStorage.setUsername(username);
         mStorage.setPassword(password);
         mStorage.setDomain(domain);
+    }
+
+    public void saveStunServer(String stun) {
         mStorage.setStun(stun);
     }
 
@@ -667,12 +687,16 @@ public class LinphoneMiniManager implements CoreListener {
             LinphoneContext.instance().openIncall();
             android.util.Log.d(TAG, "StateChanged Incoming");
 
-            long[] patern = {0, 1000, 1000};
-            mVibrator.vibrate(patern, 1);
+            if (mAudioManager.getRingerMode() != AudioManager.RINGER_MODE_SILENT) {
+                long[] patern = {0, 1000, 1000};
+                mVibrator.vibrate(patern, 1);
+            }
 
-            mAudioManager = ((AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE));
             mAudioManager.setMode(AudioManager.MODE_IN_CALL);
             mAudioManager.setSpeakerphoneOn(true);
+
+            LinphoneContext.isCall = true;
+            LinphoneContext.instance().showNotification();
         } else if (state == State.End) {
             mVibrator.cancel();
 
@@ -681,12 +705,19 @@ public class LinphoneMiniManager implements CoreListener {
             }
 
             android.util.Log.d(TAG, "StateChanged End");
+
+            LinphoneContext.isCall = false;
+            LinphoneContext.instance().showNotification();
         } else if (state == State.Error) {
             mVibrator.cancel();
 
             if (callActivity != null) {
                 callActivity.finish();
             }
+
+
+            LinphoneContext.isCall = false;
+            LinphoneContext.instance().showNotification();
 
             android.util.Log.d(TAG, "StateChanged Error");
         }
