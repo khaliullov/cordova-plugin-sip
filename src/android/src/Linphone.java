@@ -135,6 +135,8 @@ public class Linphone extends CordovaPlugin  {
             powerManager = false;
         }
 
+        LinphoneContext.instance().checkPermission();
+
         cordova.getThreadPool().execute(() -> {
             mLinphoneManager.listenLogin(callbackContext);
             mLinphoneManager.clearRegistration();
