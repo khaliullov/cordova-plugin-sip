@@ -76,7 +76,9 @@ public class LinphoneMiniActivity extends Activity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true);
             setTurnScreenOn(true);
+
             KeyguardManager keyguardManager = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
+
             if (keyguardManager != null) {
                 keyguardManager.requestDismissKeyguard(this, null);
             }

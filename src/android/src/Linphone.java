@@ -165,15 +165,15 @@ public class Linphone extends CordovaPlugin  {
     }
 
     public static synchronized void logout(final CallbackContext callbackContext) {
-        try{
+        try {
             Log.d("logout");
             mLinphoneManager.logout();
             mLinphoneManager.saveAuth("", "", "");
             mLinphoneManager.saveStunServer("");
             LinphoneContext.instance().stopForegraundService();
-            Log.d("logout sukses");
+            Log.d("logout success");
             callbackContext.success();
-        }catch (Exception e){
+        } catch (Exception e) {
             Log.d("Logout error", e.getMessage());
             callbackContext.error(e.getMessage());
         }

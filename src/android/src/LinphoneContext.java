@@ -15,6 +15,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.View;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -28,6 +29,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -267,7 +269,7 @@ public class LinphoneContext {
     }
 
     public void checkPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             if (!Settings.canDrawOverlays(mContext)) {
                 dispatchOnUIThread(
                         new Runnable() {
@@ -286,6 +288,29 @@ public class LinphoneContext {
                 );
             }
         }
+/*
+        try {
+            Class<?> c = Class.forName("android.os.SystemProperties");
+            Method get = c.getMethod("get", String.class);
+            String miui = (String) get.invoke(c, "ro.miui.ui.version.code");
+            if (!miui.isEmpty() && Build.VERSION.SDK_INT >= 28) {
+                dispatchOnUIThread(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+                                Uri uri = Uri.fromParts("package", mContext.getPackageName(), null);
+                                intent.setData(uri);
+                                mContext.startActivity(intent);
+                            }
+                        }
+                );
+            }
+        } catch (Exception e) {
+
+        }
+ */
     }
     public void sendLogcatMail(final Activity context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

@@ -29,7 +29,11 @@ public class LinphoneForegroundService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        String action = intent.getAction();
+        String action = ACTION_START_FOREGROUND_SERVICE;
+
+        if (intent != null) {
+            action = intent.getAction();
+        }
 
         switch (action) {
             case ACTION_STOP_FOREGROUND_SERVICE:
