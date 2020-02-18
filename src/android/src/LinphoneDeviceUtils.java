@@ -21,7 +21,7 @@ import org.linphone.core.tools.Log;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.ionic.starter.R;
+import ru.simdev.evo.life.R;
 
 public class LinphoneDeviceUtils {
     private static final Intent[] POWERMANAGER_INTENTS = {
