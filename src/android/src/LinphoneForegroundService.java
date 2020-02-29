@@ -32,6 +32,7 @@ public class LinphoneForegroundService extends Service {
         String action = ACTION_START_FOREGROUND_SERVICE;
 
         if (intent != null) {
+            android.util.Log.d(TAG, "[Foreground Service] NULL ACTION");
             action = intent.getAction();
         }
 
@@ -41,21 +42,28 @@ public class LinphoneForegroundService extends Service {
                 break;
 
             case ACTION_START_FOREGROUND_SERVICE:
-                android.util.Log.d(TAG, "run service");
+                android.util.Log.d(TAG, "run service " + (LinphoneContext.isReady() ? "isReady" : "no"));
+
+                if (!LinphoneContext.isReady()) {
+                    android.util.Log.e(TAG, "[Foreground Service] Starting context");
+                    new LinphoneContext(getApplicationContext(), true);
+                    LinphoneContext.instance().start(true);
+                }
 
                 startForeground(LinphoneContext.NOTIFICATION_ID, LinphoneContext.getServiceNotification(this, false));
 
                 mListener = new CoreListenerStub() {
                     @Override
                     public void onRegistrationStateChanged(final Core core, final ProxyConfig proxy, final RegistrationState state, String smessage) {
-                        if (state != RegistrationState.Progress && (prevState == null || prevState != state)) {
-                            android.util.Log.d(TAG, "update notification " + (prevState != null ? prevState.toString() : "null") + " - " + state.toString());
+                    android.util.Log.d(TAG, "STATE " + state.toString());
+                    if (state != RegistrationState.Progress && (prevState == null || prevState != state)) {
+                        android.util.Log.d(TAG, "update notification " + (prevState != null ? prevState.toString() : "null") + " - " + state.toString());
 
-                            LinphoneContext.isConnected = state == RegistrationState.Ok;
-                            LinphoneContext.instance().showNotification();
+                        LinphoneContext.isConnected = state == RegistrationState.Ok;
+                        LinphoneContext.instance().showNotification();
 
-                            prevState = state;
-                        }
+                        prevState = state;
+                    }
                     }
                 };
 
@@ -70,11 +78,9 @@ public class LinphoneForegroundService extends Service {
                 TimerTask lTask = new TimerTask() {
                     @Override
                     public void run() {
-                        android.util.Log.d(TAG, "TIMER");
-                        if (LinphoneMiniManager.mCore != null) {
-                            android.util.Log.d(TAG, "TIMER refreshRegisters");
-                            LinphoneMiniManager.mCore.refreshRegisters();
-                        }
+                    if (LinphoneMiniManager.mCore != null) {
+                        LinphoneMiniManager.mCore.refreshRegisters();
+                    }
                     }
                 };
 
@@ -85,7 +91,23 @@ public class LinphoneForegroundService extends Service {
                 break;
         }
 
-        return super.onStartCommand(intent, flags, startId);
+        super.onStartCommand(intent, flags, startId);
+
+        return START_STICKY;
+    }
+
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        super.onTaskRemoved(rootIntent);
+
+        //stopForegroundService();
+
+        if (!LinphoneContext.isReady()) {
+            android.util.Log.e(TAG, "[Foreground Service] Starting context");
+            new LinphoneContext(getApplicationContext(), true);
+            LinphoneContext.instance().start(true);
+            LinphoneContext.instance().runForegraundService();
+        }
     }
 
     @Override
