@@ -114,8 +114,13 @@ public class LinphoneForegroundService extends Service {
     public void onDestroy() {
         super.onDestroy();
 
-        LinphoneMiniManager.mCore.removeListener(mListener);
-        mTimer.cancel();
+        if (LinphoneMiniManager.mCore != null) {
+            LinphoneMiniManager.mCore.removeListener(mListener);
+        }
+
+        if (mTimer != null) {
+            mTimer.cancel();
+        }
     }
 
     @Nullable
