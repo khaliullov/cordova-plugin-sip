@@ -3,34 +3,11 @@
 
 <h3>IOS</h3>
 
-<h4>Build Settings -> Header Search Paths</h4>
+Add plugin and run:
 
 ```
-    "$(SRCROOT)/YOURPROJECTNAME/Plugins/cordova-plugin-sip/include"
-    "$(SRCROOT)/YOURPROJECTNAME/Plugins/cordova-plugin-sip/include/belle-sip"
-    "$(SRCROOT)/YOURPROJECTNAME/Plugins/cordova-plugin-sip/include/ortp"
-    "$(SRCROOT)/YOURPROJECTNAME/Plugins/cordova-plugin-sip/include/linphone"
-    "$(SRCROOT)/YOURPROJECTNAME/Plugins/cordova-plugin-sip/include/mediastreamer2"
+pod install --project-directory=platforms/ios
 ```
-
-<h4>You must import these files in the  Bridging Header File</h4>
-
-```
-    #include "Plugins/cordova-plugin-sip/include/linphone/lpconfig.h"
-    #include "Plugins/cordova-plugin-sip/include/linphone/linphonecore.h"
-    #include "Plugins/cordova-plugin-sip/include/linphone/linphonecore_utils.h"
-```
-
-<h4>IOS Permissions</h4>
-  
-You must include following permissions
-```
-        <key>NSCameraUsageDescription</key>
-        <string>Description Why you use this permission</string>
-        <key>NSMicrophoneUsageDescription</key>
-        <string>Description Why you use this permission</string>
-```
-
 
 <h3>Android </h3>
 
