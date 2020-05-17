@@ -44,7 +44,8 @@
     <source-file src="src/android/src/LinphoneWorker.java" target-dir="src/com/sip/linphone" />
     <source-file src="src/android/src/LinphoneDeviceUtils.java" target-dir="src/com/sip/linphone" />
     <source-file src="src/android/src/LinphoneForegroundService.java" target-dir="src/com/sip/linphone" />
-    <source-file src="src/android/res/layout/incall.xml" target-dir="res/layout" />
+    <source-file src="src/android/res/layout-land/incall.xml" target-dir="res/layout-land" />
+    <source-file src="src/android/res/layout-port/incall.xml" target-dir="res/layout-port" />
     <source-file src="src/android/res/layout/dialog.xml" target-dir="res/layout" />
     <source-file src="src/android/res/raw/linphonerc_default" target-dir="res/raw" />
     <source-file src="src/android/res/raw/linphonerc_factory" target-dir="res/raw" />

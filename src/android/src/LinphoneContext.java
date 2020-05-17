@@ -287,46 +287,6 @@ public class LinphoneContext {
             }
         }
     }
-    public void sendLogcatMail(final Activity context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (context.checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(context, new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
-            }
-        }
-
-        String logString = new String("");
-
-        try {
-            Process process = Runtime.getRuntime().exec("logcat -d");
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            StringBuilder log = new StringBuilder();
-            String line;
-
-            while((line = bufferedReader.readLine()) != null)
-            {
-                log.append(line);
-                log.append("\n");
-            }
-
-            logString = log.toString();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        LinphoneStorage storage = new LinphoneStorage(mContext);
-        String username = storage.getUsername();
-
-        android.util.Log.d(TAG, "run send mail " + username);
-
-        Intent emailIntent = new Intent(Intent.ACTION_SEND);
-        emailIntent.setType("vnd.android.cursor.dir/email");
-        String to[] = {"k.bulaev@simdev.ru"};
-        emailIntent.putExtra(Intent.EXTRA_EMAIL, to);
-        emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Logcat " + username);
-        emailIntent.putExtra(Intent.EXTRA_TEXT, logString);
-
-        context.startActivity(Intent.createChooser(emailIntent , "Отправить logcat письмом..."));
-    }
 
     public static String convertStreamToString(InputStream is) throws Exception {
         BufferedReader reader = new BufferedReader(new InputStreamReader(is));

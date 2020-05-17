@@ -69,19 +69,20 @@
         android:drawableStart="@drawable/btn_open"
         android:background="@drawable/round_button" />
 
-    <Button android:id="@+id/answerButton"
+    <Button
+        android:id="@+id/answerButton"
         android:layout_width="80dp"
         android:layout_height="80dp"
-        android:layout_centerVertical="true"
-        android:layout_toRightOf="@+id/unlockButton"
         android:layout_alignParentBottom="true"
-        android:layout_marginBottom="100dp"
+        android:layout_centerVertical="true"
         android:layout_marginLeft="20dp"
-        android:onClick="butAnswer"
-        android:elevation="6dp"
-        android:paddingLeft="30dp"
+        android:layout_marginBottom="104dp"
+        android:layout_toRightOf="@+id/unlockButton"
+        android:background="@drawable/round_button"
         android:drawableStart="@drawable/btn_answer"
-        android:background="@drawable/round_button" />
+        android:elevation="6dp"
+        android:onClick="butAnswer"
+        android:paddingLeft="30dp" />
 
     <TextView
         android:id="@+id/rejectText"

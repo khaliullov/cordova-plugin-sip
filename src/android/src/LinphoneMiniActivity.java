@@ -23,7 +23,6 @@ import android.app.Activity;
 import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ActivityInfo;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.opengl.GLSurfaceView;
@@ -91,7 +90,7 @@ public class LinphoneMiniActivity extends Activity {
         Resources R = getApplication().getResources();
         String packageName = getApplication().getPackageName();
 
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
         setContentView(R.getIdentifier("incall", "layout", packageName));
 

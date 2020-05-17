@@ -158,7 +158,7 @@ public class Linphone extends CordovaPlugin  {
 
     public void sendLogcat() {
         try {
-            LinphoneContext.instance().sendLogcatMail(cordova.getActivity());
+
         } catch (Exception e){
             Log.d("call error", e.getMessage());
         }
