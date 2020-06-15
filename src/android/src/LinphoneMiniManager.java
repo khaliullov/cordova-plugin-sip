@@ -20,6 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.media.AudioManager;
@@ -29,6 +30,7 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.os.Build;
 import android.os.Vibrator;
+import android.preference.PreferenceManager;
 
 import androidx.annotation.NonNull;
 
@@ -39,6 +41,9 @@ import com.google.firebase.iid.InstanceIdResult;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.linphone.core.Address;
 import org.linphone.core.AuthInfo;
 import org.linphone.core.AuthMethod;
@@ -74,6 +79,7 @@ import org.linphone.mediastream.video.capture.hwconf.AndroidCameraConfiguration.
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -210,9 +216,10 @@ public class LinphoneMiniManager implements CoreListener {
             android.util.Log.d(TAG, "Error initializing Linphone");
             Log.e(new Object[]{"Error initializing Linphone", e.getMessage()});
         }
+
     }
 
-    public Core getLc(){
+    public Core getLc() {
         return mCore;
     }
 
@@ -279,7 +286,7 @@ public class LinphoneMiniManager implements CoreListener {
             if (androidCamera.frontFacing)
                 camId = androidCamera.id;
         }
-        mCore.setVideoDevice(""+camId);
+        mCore.setVideoDevice("" + camId);
     }
 
     private void copyAssetsFromPackage(String basePath) throws IOException {
@@ -311,13 +318,13 @@ public class LinphoneMiniManager implements CoreListener {
 
         ProxyConfig lpc = mCore.getDefaultProxyConfig();
 
-        if (lpc!=null && lAddress.asStringUriOnly().equals(lpc.getDomain())) {
+        if (lpc != null && lAddress.asStringUriOnly().equals(lpc.getDomain())) {
             return;
         }
 
         lAddress.setDisplayName(displayName);
 
-        if(mCore.isNetworkReachable()) {
+        if (mCore.isNetworkReachable()) {
             CallParams params = mCore.createCallParams(mCore.getCurrentCall());
             params.enableVideo(true);
             mCore.inviteAddressWithParams(lAddress, params);
@@ -459,7 +466,7 @@ public class LinphoneMiniManager implements CoreListener {
         mLoginCallbackContext = callbackContext;
     }
 
-    public void ensureRegistered(){
+    public void ensureRegistered() {
         Core lc = mCore;
         lc.ensureRegistered();
     }
@@ -498,7 +505,7 @@ public class LinphoneMiniManager implements CoreListener {
 
     public void acceptCall() {
         Call call = mCore.getCurrentCall();
-        if (call != null){
+        if (call != null) {
             CallParams params = call.getParams();
             params.enableVideo(true);
             params.enableAudio(true);
@@ -508,7 +515,7 @@ public class LinphoneMiniManager implements CoreListener {
 
     public void previewCall() {
         Call call = mCore.getCurrentCall();
-        if (call != null){
+        if (call != null) {
             String agent = call.getRemoteUserAgent();
 
             android.util.Log.e(TAG, "agent: " + agent);
@@ -596,7 +603,7 @@ public class LinphoneMiniManager implements CoreListener {
         android.util.Log.d(TAG, "proxyAddress: " + proxyAddress.asStringUriOnly());
 
         if (password != null) {
-            mCore.addAuthInfo(lcFactory.createAuthInfo(address.getUsername(), address.getUsername(), password, (String)null, (String)null, address.getDomain()));
+            mCore.addAuthInfo(lcFactory.createAuthInfo(address.getUsername(), address.getUsername(), password, (String) null, (String) null, address.getDomain()));
         }
 
         ProxyConfig proxyCfg = mCore.createProxyConfig();
@@ -641,9 +648,9 @@ public class LinphoneMiniManager implements CoreListener {
 
     @Override
     public void onGlobalStateChanged(Core core, GlobalState globalState, String s) {
-        android.util.Log.d(TAG,"Global state changed");
-        android.util.Log.d(TAG,globalState.name());
-        android.util.Log.d(TAG,s);
+        android.util.Log.d(TAG, "Global state changed");
+        android.util.Log.d(TAG, globalState.name());
+        android.util.Log.d(TAG, s);
     }
 
     @Override
@@ -676,6 +683,44 @@ public class LinphoneMiniManager implements CoreListener {
         }
     }
 
+    private HashMap<String, String> prepareExtras(Call call) {
+        HashMap<String, String> extras = new HashMap<String, String>();
+        extras.put("address", "");
+        extras.put("displayName", "");
+        extras.put("unlockUrl", "");
+        if (call == null || call.getRemoteAddress() == null) {
+            return extras;
+        }
+        String callerId = call.getRemoteAddress().getUsername();
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+        String PREFS_NAME = preferences.getString("NativeStorageSharedPreferencesName", "NativeStorage");
+        SharedPreferences settings = mContext.getSharedPreferences(PREFS_NAME, Activity.MODE_PRIVATE);
+        String jsonContacts = settings.getString("contacts", "[]");
+        try {
+            JSONArray contacts = new JSONArray(jsonContacts);
+            for (int i = 0; i < contacts.length(); i++) {
+                JSONObject contact = (JSONObject) contacts.getJSONObject(i);
+                if (contact.has("sip_name") && contact.has("door_open_url")) {
+                    if (contact.getString("sip_name").equals(callerId)) {
+                        extras.put("unlockUrl", contact.getString("door_open_url"));
+                        if (contact.has("address")) {
+                            extras.put("address", contact.getString("address"));
+                        } else {
+                            extras.put("address", call.getRemoteAddress().asStringUriOnly());
+                        }
+                        if (contact.has("entrance")) {
+                            extras.put("displayName", contact.getString("entrance"));
+                        } else {
+                            extras.put("displayName", callerId);
+                        }
+                    }
+                }
+            }
+        } catch (JSONException e) {
+        }
+        return extras;
+    }
+
     @Override
     public void onCallStateChanged(Core core, Call call, State state, String s) {
         android.util.Log.d(TAG, "-------------- onCallStateChanged -------------");
@@ -684,7 +729,9 @@ public class LinphoneMiniManager implements CoreListener {
             android.util.Log.d(TAG, "StateChanged Connected");
             mVibrator.cancel();
         } else if (state == State.IncomingReceived) {
-            LinphoneContext.instance().openIncall();
+            HashMap<String, String> extras = this.prepareExtras(call);
+
+            LinphoneContext.instance().openIncall(extras);
             android.util.Log.d(TAG, "StateChanged Incoming");
 
             if (mAudioManager.getRingerMode() != AudioManager.RINGER_MODE_SILENT) {

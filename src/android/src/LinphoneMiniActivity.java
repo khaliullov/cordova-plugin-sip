@@ -23,9 +23,11 @@ import android.app.Activity;
 import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.opengl.GLSurfaceView;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.SurfaceHolder;
@@ -38,6 +40,7 @@ import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 
+import org.json.JSONObject;
 import org.linphone.core.Call;
 import org.linphone.core.CallParams;
 import org.linphone.core.Core;
@@ -45,6 +48,13 @@ import org.linphone.core.Reason;
 import org.linphone.mediastream.Log;
 import org.linphone.mediastream.video.AndroidVideoWindowImpl;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.URL;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -60,6 +70,9 @@ public class LinphoneMiniActivity extends Activity {
     private Animation answerAnim;
     private Animation unlockAnim;
     private Timer unlockTimer;
+    private String address;
+    private String displayName;
+    private String unlockUrl;
 
     @Override
     protected void onNewIntent(Intent intent) {
@@ -188,8 +201,9 @@ public class LinphoneMiniActivity extends Activity {
 
         Intent i = getIntent();
         Bundle extras = i.getExtras();
-        String address = extras.getString("address");
-        String displayName = extras.getString("displayName");
+        address = extras.getString("address");
+        displayName = extras.getString("displayName");
+        unlockUrl = extras.getString("unlockUrl");
 
         String videoDeviceId = LinphoneContext.instance().mLinphoneManager.getLc().getVideoDevice();
         LinphoneContext.instance().mLinphoneManager.getLc().setVideoDevice(videoDeviceId);
@@ -239,7 +253,82 @@ public class LinphoneMiniActivity extends Activity {
         onBackPressed();
     }
 
+    class AsyncDoorOpenRequest extends AsyncTask<String, Void, String> {
+
+        @Override
+        protected String doInBackground(String... args) {
+            String url = args[0];
+            String result = "error!";
+            HttpURLConnection httpConn = null;
+            try {
+                URL myurl = new URL(url);
+                httpConn = (HttpURLConnection) myurl.openConnection();
+                httpConn.setUseCaches(false);
+                httpConn.setDoOutput(false);
+                httpConn.setDoInput(true);
+                httpConn.setReadTimeout(3 * 1000);
+                httpConn.setConnectTimeout(3 * 1000);
+                httpConn.setRequestMethod("POST");
+
+                StringBuilder content;
+                int statusCode = httpConn.getResponseCode();
+
+                if (statusCode == 200) {
+                    try (BufferedReader in = new BufferedReader(
+                            new InputStreamReader(httpConn.getInputStream()))) {
+
+                        String line;
+                        content = new StringBuilder();
+
+                        while ((line = in.readLine()) != null) {
+                            content.append(line);
+                        }
+                        JSONObject json = new JSONObject(content.toString());
+                        if (json.has("status") && json.getBoolean("status")) {
+                            result = "opened";
+                        }
+                    } catch (Exception e) {
+
+                    }
+                }
+
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            } catch (ProtocolException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                if (httpConn != null) {
+                    httpConn.disconnect();
+                }
+            }
+            android.util.Log.d("LinphoneSip", "door status");
+            android.util.Log.d("LinphoneSip", result);
+            return result;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            // TODO add toast with result;
+        }
+
+    }
+
+    public void unlockRequest(View v) {
+        v.startAnimation(unlockAnim);
+        new AsyncDoorOpenRequest().execute(unlockUrl);
+    }
+
     public void butUnlock(View v) {
+        if (unlockUrl.equals("")) {
+            legacybutUnlock(v);
+        } else {
+            unlockRequest(v);
+        }
+    }
+
+    public void legacybutUnlock(View v) {
         if (unlockTimer != null) {
             return;
         }

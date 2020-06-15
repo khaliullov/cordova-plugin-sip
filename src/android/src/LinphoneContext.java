@@ -28,7 +28,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import ru.simdev.evo.life.MainActivity;
@@ -115,7 +117,7 @@ public class LinphoneContext {
         sInstance = null;
     }
 
-    public void openIncall() {
+    public void openIncall(HashMap<String, String> extras) {
         answered = false;
 
         dispatchOnUIThread(
@@ -126,8 +128,9 @@ public class LinphoneContext {
 
                         Intent intent = new Intent(mContext, LinphoneMiniActivity.class);
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);
-                        intent.putExtra("address", "");
-                        intent.putExtra("displayName", "");
+                        for(Map.Entry<String, String> entry: extras.entrySet()) {
+                            intent.putExtra(entry.getKey(), entry.getValue());
+                        }
 
                         mLinphoneManager.previewCall();
 
