@@ -709,7 +709,7 @@ public class LinphoneMiniManager implements CoreListener {
                             extras.put("address", call.getRemoteAddress().asStringUriOnly());
                         }
                         if (contact.has("entrance")) {
-                            extras.put("displayName", contact.getString("entrance"));
+                            extras.put("displayName", "Подъезд №" + contact.getString("entrance"));
                         } else {
                             extras.put("displayName", callerId);
                         }

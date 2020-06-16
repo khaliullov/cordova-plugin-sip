@@ -202,6 +202,7 @@ public class LinphoneContext {
         Intent resultIntent = new Intent(context.getApplicationContext(), LinphoneMiniActivity.class);
         resultIntent.putExtra("address", "");
         resultIntent.putExtra("displayName", "");
+        resultIntent.putExtra("unlockUrl", "");
         resultIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
         PendingIntent resultPendingIntent = PendingIntent.getActivity(context, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
 

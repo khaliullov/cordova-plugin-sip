@@ -23,7 +23,6 @@ import android.app.Activity;
 import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.opengl.GLSurfaceView;
@@ -39,6 +38,7 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import org.json.JSONObject;
 import org.linphone.core.Call;
@@ -310,7 +310,9 @@ public class LinphoneMiniActivity extends Activity {
 
         @Override
         protected void onPostExecute(String result) {
-            // TODO add toast with result;
+            Toast.makeText(getApplicationContext(),
+                    result.equals("opened") ? "Дверь открыта" : "Ошибка!",
+                    Toast.LENGTH_SHORT).show();
         }
 
     }
