@@ -33,8 +33,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import ru.simdev.evo.life.MainActivity;
-import ru.simdev.evo.life.R;
+import ru.simdev.evo.video.MainActivity;
+import ru.simdev.evo.video.R;
 
 public class LinphoneContext {
     private static final String TAG = "LinphoneSip";
