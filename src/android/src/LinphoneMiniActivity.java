@@ -23,12 +23,14 @@ import android.app.Activity;
 import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.opengl.GLSurfaceView;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -37,7 +39,9 @@ import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONObject;
@@ -58,6 +62,9 @@ import java.net.URL;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import ru.simdev.evo.video.R;
+import ru.simdev.evo.video.databinding.IncallBinding;
+
 /**
  * @author Sylvain Berfini
  */
@@ -73,6 +80,7 @@ public class LinphoneMiniActivity extends Activity {
     private String address;
     private String displayName;
     private String unlockUrl;
+    private IncallBinding binding;
 
     @Override
     protected void onNewIntent(Intent intent) {
@@ -105,16 +113,18 @@ public class LinphoneMiniActivity extends Activity {
 
         //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
-        setContentView(R.getIdentifier("incall", "layout", packageName));
+        LayoutInflater layoutInflater = this.getLayoutInflater();
 
-        RelativeLayout bgElement = findViewById(R.getIdentifier("topLayout", "id", packageName));
-        bgElement.setBackgroundColor(Color.WHITE);
+        binding = IncallBinding.inflate(layoutInflater);
+        setContentView(binding.getRoot());
 
-        answerButton = findViewById(R.getIdentifier("answerButton", "id", packageName));
+        binding.topLayout.setBackgroundColor(Color.WHITE);
 
-        mVideoView = findViewById(R.getIdentifier("videoSurface", "id", packageName));
+        answerButton = binding.answerButton;
 
-        mCaptureView = findViewById(R.getIdentifier("videoCaptureSurface", "id", packageName));
+        mVideoView = binding.videoSurface;
+
+        mCaptureView = binding.videoCaptureSurface;
         mCaptureView.setVisibility(View.INVISIBLE);
         mCaptureView.getHolder().setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
@@ -163,7 +173,7 @@ public class LinphoneMiniActivity extends Activity {
 
         unlockAnim = AnimationUtils.loadAnimation(this, R.getIdentifier("alpha_reverse", "anim", packageName));
 
-        unlockButton = (Button) findViewById(R.getIdentifier("unlockButton", "id", packageName));
+        unlockButton = binding.unlockButton;
 
         //float alpha = 0.1f;
         //AlphaAnimation alphaUp = new AlphaAnimation(alpha, alpha);
@@ -204,6 +214,8 @@ public class LinphoneMiniActivity extends Activity {
         address = extras.getString("address");
         displayName = extras.getString("displayName");
         unlockUrl = extras.getString("unlockUrl");
+        binding.address.setText(address);
+        binding.displayName.setText(displayName);
 
         String videoDeviceId = LinphoneContext.instance().mLinphoneManager.getLc().getVideoDevice();
         LinphoneContext.instance().mLinphoneManager.getLc().setVideoDevice(videoDeviceId);

@@ -125,4 +125,24 @@
         android:textColor="#999999" >
     </TextView>
 
+    <TextView
+        android:id="@+id/address"
+        android:layout_width="362dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="24dp"
+        android:layout_marginBottom="261dp"
+        android:textAlignment="center" />
+
+    <TextView
+        android:id="@+id/displayName"
+        android:layout_width="357dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="29dp"
+        android:layout_marginBottom="229dp"
+        android:textAlignment="center" />
+
 </RelativeLayout>
