@@ -21,10 +21,12 @@ public class LinphoneForegroundService extends Service {
     private CoreListenerStub mListener;
     public static Timer mTimer;
     private RegistrationState prevState;
+    private LinphoneStorage mStorage;
 
     @Override
     public void onCreate() {
         super.onCreate();
+        mStorage = new LinphoneStorage(this);
     }
 
     @Override
@@ -61,6 +63,8 @@ public class LinphoneForegroundService extends Service {
 
                         LinphoneContext.isConnected = state == RegistrationState.Ok;
                         LinphoneContext.instance().showNotification();
+
+                        mStorage.setStatus(LinphoneContext.isConnected ? "connected" : "disconnected");
 
                         prevState = state;
                     }

@@ -69,6 +69,7 @@ import org.linphone.core.NatPolicy;
 import org.linphone.core.PresenceModel;
 import org.linphone.core.ProxyConfig;
 import org.linphone.core.PublishState;
+import org.linphone.core.Reason;
 import org.linphone.core.RegistrationState;
 import org.linphone.core.SubscriptionState;
 import org.linphone.core.Transports;
@@ -124,6 +125,7 @@ public class LinphoneMiniManager implements CoreListener {
         mPrefs = LinphonePreferences.instance();
 
         mStorage = new LinphoneStorage(mContext);
+        mStorage.setStatus("");
 
         mAudioManager = ((AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE));
 
@@ -685,6 +687,7 @@ public class LinphoneMiniManager implements CoreListener {
 
     private HashMap<String, String> prepareExtras(Call call) {
         HashMap<String, String> extras = new HashMap<String, String>();
+        extras.put("id", "");
         extras.put("address", "");
         extras.put("displayName", "");
         extras.put("unlockUrl", "");
@@ -707,6 +710,9 @@ public class LinphoneMiniManager implements CoreListener {
                             extras.put("address", contact.getString("address"));
                         } else {
                             extras.put("address", call.getRemoteAddress().asStringUriOnly());
+                        }
+                        if (contact.has("id")) {
+                            extras.put("id", contact.getString("id"));
                         }
                         if (contact.has("entrance")) {
                             extras.put("displayName", "Подъезд №" + contact.getString("entrance"));
@@ -731,19 +737,29 @@ public class LinphoneMiniManager implements CoreListener {
         } else if (state == State.IncomingReceived) {
             HashMap<String, String> extras = this.prepareExtras(call);
 
-            LinphoneContext.instance().openIncall(extras);
-            android.util.Log.d(TAG, "StateChanged Incoming");
+            android.util.Log.w(TAG, "extra id " + extras.get("id"));
 
-            if (mAudioManager.getRingerMode() != AudioManager.RINGER_MODE_SILENT) {
-                long[] patern = {0, 1000, 1000};
-                mVibrator.vibrate(patern, 1);
+            String notDisturb = mStorage.getNotdisturb(extras.get("id"));
+
+            android.util.Log.w(TAG, "notDisturb " + notDisturb + " " + (notDisturb != "1"));
+
+            if (notDisturb.equals("1")) {
+                call.decline(Reason.NotAnswered);
+                android.util.Log.w(TAG, "notDisturb ON");
+            } else {
+                android.util.Log.w(TAG, "notDisturb OFF");
+
+                LinphoneContext.instance().openIncall(extras);
+                android.util.Log.d(TAG, "StateChanged Incoming");
+
+                if (mAudioManager.getRingerMode() != AudioManager.RINGER_MODE_SILENT) {
+                    long[] patern = {0, 1000, 1000};
+                    mVibrator.vibrate(patern, 1);
+                }
+
+                LinphoneContext.isCall = true;
+                LinphoneContext.instance().showNotification();
             }
-
-            mAudioManager.setMode(AudioManager.MODE_IN_CALL);
-            mAudioManager.setSpeakerphoneOn(true);
-
-            LinphoneContext.isCall = true;
-            LinphoneContext.instance().showNotification();
         } else if (state == State.End) {
             mVibrator.cancel();
 

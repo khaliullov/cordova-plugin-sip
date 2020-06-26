@@ -23,9 +23,9 @@ import android.app.Activity;
 import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.media.AudioManager;
 import android.opengl.GLSurfaceView;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -39,9 +39,6 @@ import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
-import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONObject;
@@ -62,7 +59,6 @@ import java.net.URL;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import ru.simdev.evo.video.R;
 import ru.simdev.evo.video.databinding.IncallBinding;
 
 /**
@@ -81,6 +77,7 @@ public class LinphoneMiniActivity extends Activity {
     private String displayName;
     private String unlockUrl;
     private IncallBinding binding;
+    private AudioManager mAudioManager;
 
     @Override
     protected void onNewIntent(Intent intent) {
@@ -175,6 +172,8 @@ public class LinphoneMiniActivity extends Activity {
 
         unlockButton = binding.unlockButton;
 
+        mAudioManager = ((AudioManager) this.getSystemService(Context.AUDIO_SERVICE));
+
         //float alpha = 0.1f;
         //AlphaAnimation alphaUp = new AlphaAnimation(alpha, alpha);
         //alphaUp.setFillAfter(true);
@@ -247,6 +246,9 @@ public class LinphoneMiniActivity extends Activity {
                 call.setParams(params);
 
                 answerButton.setEnabled(false);
+
+                mAudioManager.setMode(AudioManager.MODE_IN_CALL);
+                mAudioManager.setSpeakerphoneOn(true);
 
                 float alpha = 1f;
                 AlphaAnimation alphaUp = new AlphaAnimation(alpha, alpha);

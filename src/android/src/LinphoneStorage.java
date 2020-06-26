@@ -3,19 +3,29 @@ package com.sip.linphone;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class LinphoneStorage {
     private SharedPreferences.Editor editor;
+    private SharedPreferences.Editor editorIonic;
     private Context mContext;
 
     public SharedPreferences pref;
+    public SharedPreferences prefIonic;
+    public SharedPreferences prefStatus;
 
     private int PRIVATE_MODE = Context.MODE_PRIVATE;
     private static final String PREF_NAME = "_linphone_store";
+    private static final String IONIC_PREF_NAME = "NativeStorage";
 
     public LinphoneStorage(Context context) {
         mContext = context;
         pref = mContext.getSharedPreferences(PREF_NAME, PRIVATE_MODE);
         editor = pref.edit();
+
+        prefIonic = mContext.getSharedPreferences(IONIC_PREF_NAME, PRIVATE_MODE);
+        editorIonic = prefIonic.edit();
     }
 
     public void setUsername(String username) {
@@ -52,5 +62,27 @@ public class LinphoneStorage {
 
     public String getStun() {
         return pref.getString("stun", "");
+    }
+
+    public String getNotdisturb(String doorphoneId) {
+        String jsonSettings = prefIonic.getString("intercom_settings", "[]");
+
+        try {
+            JSONObject settings = new JSONObject(jsonSettings);
+
+            JSONObject doorphone = settings.getJSONObject(doorphoneId);
+
+            if (doorphone != null) {
+                return doorphone.getString("notdisturb");
+            }
+        } catch (JSONException e) {
+        }
+
+        return "0";
+    }
+
+    public void setStatus(String status) {
+        editorIonic.putString("intercom_status", status);
+        editorIonic.commit();
     }
 }
