@@ -82,7 +82,7 @@ public class LinphoneStorage {
     }
 
     public void setStatus(String status) {
-        editorIonic.putString("intercom_status", status);
+        editorIonic.putString("intercom_status", "{\"status\":\"" + status + "\"}");
         editorIonic.commit();
     }
 }
