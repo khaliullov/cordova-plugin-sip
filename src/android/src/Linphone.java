@@ -171,6 +171,8 @@ public class Linphone extends CordovaPlugin  {
             mLinphoneManager.saveAuth("", "", "");
             mLinphoneManager.saveStunServer("");
             LinphoneContext.instance().stopForegraundService();
+            LinphoneStorage mStorage = new LinphoneStorage(mContext);
+            mStorage.setStatus("");
             callbackContext.success();
         }catch (Exception e){
             Log.d("Logout error", e.getMessage());

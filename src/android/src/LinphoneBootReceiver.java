@@ -13,16 +13,20 @@ public class LinphoneBootReceiver extends BroadcastReceiver {
         if (intent.getAction().equalsIgnoreCase(Intent.ACTION_SHUTDOWN)) {
             android.util.Log.d(TAG, "[Boot Receiver] Device is shutting down, destroying Core to unregister");
         } else if (intent.getAction().equalsIgnoreCase(Intent.ACTION_BOOT_COMPLETED)) {
-            new LinphoneContext(context, true);
-            LinphoneContext.instance().start(true);
+            LinphoneStorage storage = new LinphoneStorage(context);
 
-            LinphoneContext.instance().runWorker();
+            if (!storage.getDomain().equals("")) {
+                new LinphoneContext(context, true);
+                LinphoneContext.instance().start(true);
 
-            if (LinphoneContext.instance().mLinphoneManager.loginFromStorage()) {
-                LinphoneContext.instance().mLinphoneManager.mPrefs.setPushNotificationEnabled(true);
-                LinphoneContext.instance().runForegraundService();
-            } else {
-                LinphoneContext.instance().mLinphoneManager.mCore.refreshRegisters();
+                LinphoneContext.instance().runWorker();
+
+                if (LinphoneContext.instance().mLinphoneManager.loginFromStorage()) {
+                    LinphoneContext.instance().mLinphoneManager.mPrefs.setPushNotificationEnabled(true);
+                    LinphoneContext.instance().runForegraundService();
+                } else {
+                    LinphoneContext.instance().mLinphoneManager.mCore.refreshRegisters();
+                }
             }
         } else if (intent.getAction().equalsIgnoreCase(Intent.ACTION_MY_PACKAGE_REPLACED)) {
 
