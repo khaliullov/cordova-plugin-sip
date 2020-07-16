@@ -26,7 +26,7 @@ repositories {
 dependencies {
     implementation 'com.google.firebase:firebase-messaging:20.0.1'
     implementation 'androidx.work:work-runtime:2.2.0'
-    implementation(name:'linphone-sdk-android-4.4.0', ext:'aar')
+    implementation(name:'linphone-sdk-android-4.2-131-g45180ef', ext:'aar')
 }
 
 android {
