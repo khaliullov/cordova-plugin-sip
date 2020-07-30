@@ -2,168 +2,169 @@
 #import <Cordova/CDV.h>
 #import <AudioToolbox/AudioToolbox.h>
 
+#import "ProductModuleName-Swift.h"
+
 @implementation Linphone
 
 @synthesize call ;
 @synthesize lc;
-static bool_t running=TRUE;
 NSString *loginCallBackID ;
 NSString *callCallBackID ;
 static bool_t isspeaker=FALSE;
-static NSTimer *tListen;
-static Linphone *himself;
+static Linphone *theLinhone;
+static UIView *remoteView;
+static CallViewController *callViewController;
 
-static void stop(int signum){
-    running=false;
-}
-//+(void) registration_state_changed:(struct _LinphoneCore*) lc:(LinphoneProxyConfig*) cfg:(LinphoneRegistrationState) cstate: (const char*)message
-static void registration_state_changed(struct _LinphoneCore *lc, LinphoneProxyConfig *cfg, LinphoneRegistrationState cstate, const char *message){
-    
+- (void)acceptCall:(CDVInvokedUrlCommand*)command {
+    lc = LinphoneManager.getLc;
+    call = linphone_core_get_current_call(lc);
+    LinphoneCallParams *lcallParams = linphone_core_create_call_params(lc, call);
+        if (!lcallParams) {
+            return;
+        }
 
-    
-    //Linphone *neco = [ Linphone new];
-    if( cstate == LinphoneRegistrationFailed){
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"RegistrationFailed"];
-        
-       
-        
-        [himself.commandDelegate sendPluginResult:pluginResult callbackId:loginCallBackID];
-    }
-    else if(cstate == LinphoneRegistrationOk){
-        //Start Listen
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"RegistrationSuccess"];
-          [himself.commandDelegate sendPluginResult:pluginResult callbackId:loginCallBackID];
-        
-        
-    }
-}
-/*
- * Call state notification callback
- */
-static void call_state_changed(LinphoneCore *lc, LinphoneCall *call, LinphoneCallState cstate, const char *msg){
-    
-    if(cstate == LinphoneCallError ){
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Error"];
-        [himself.commandDelegate sendPluginResult:pluginResult callbackId:callCallBackID];
-        
-        call = NULL;
-    }
-    if(cstate == LinphoneCallConnected){
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Connected"];
-        [himself.commandDelegate sendPluginResult:pluginResult callbackId:callCallBackID];
-    }
-    if(cstate == LinphoneCallEnd){
-        
-        call = NULL;
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"End"];
-        [himself.commandDelegate sendPluginResult:pluginResult callbackId:callCallBackID];
-        isspeaker = FALSE;
-        UInt32 audioRouteOverride = kAudioSessionOverrideAudioRoute_None;
-        AudioSessionSetProperty(kAudioSessionProperty_OverrideAudioRoute, sizeof(audioRouteOverride),
-                                &audioRouteOverride);
-        
-    }
-    if(cstate == LinphoneCallIncomingReceived){
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Incoming"];
-        [himself.commandDelegate sendPluginResult:pluginResult callbackId:callCallBackID];
-        
-    }
-}
+        linphone_call_params_enable_video(lcallParams, TRUE);
+    linphone_call_params_enable_audio(lcallParams, FALSE);
 
-- (void)acceptCall:(CDVInvokedUrlCommand*)command
-{
+    //[self.commandDelegate runInBackground:^{
+        //linphone_core_accept_call_with_params(lc, call, lcallParams);
+        linphone_core_accept_early_media_with_params(lc, call, lcallParams);
+        linphone_call_params_destroy(lcallParams);
+    //}];
     
-    bool isAccept = [command.arguments objectAtIndex:0];
-    if( isAccept == TRUE){
-        
-        linphone_core_accept_call( lc, call);
-        callCallBackID = command.callbackId;
-    }
-    else{
-        
-        linphone_core_terminate_call( lc, call);
-    }
-}
-
-- (void)listenCall:(CDVInvokedUrlCommand*)command
-{
     callCallBackID = command.callbackId;
-    
+
 }
 
-- (void)login:(CDVInvokedUrlCommand*)command
-{
-    himself = self;
-    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"OK"];
+- (void)showCallView {
+    if (!callViewController) {
+        UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Linphone" bundle:nil];
+       callViewController = [storyboard instantiateViewControllerWithIdentifier:@"CallViewController"];
+        lc = LinphoneManager.getLc;
+        //sipViewController.setCore(lc);
+    }
+      [self.viewController presentViewController:callViewController animated:YES completion:nil];
+    
+    if (!remoteView) {
+        remoteView = [[UIView alloc] initWithFrame:CGRectMake(0,0,320,240)];
+        remoteView.backgroundColor=[UIColor blackColor];
+        [callViewController.view addSubview:remoteView];
+        linphone_core_set_native_video_window_id(lc, (__bridge void *)remoteView);
+    }
+
+}
+
+- (void)onCallStateChanged:(NSNotification *)notif {
+    NSDictionary *dict = notif.userInfo;
+    NSLog(@"onCallStateChanged");
+    LinphoneCallState state = [[dict objectForKey:@"state"] intValue];
+    CDVPluginResult* pluginResult = nil;
+    if (state == LinphoneCallError) {
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Error"];
+        linphone_call_unref(call);
+        call = NULL;
+    }
+    else if (state == LinphoneCallConnected) {
+        //pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Connected"];
+    }
+    else if (state == LinphoneCallReleased) {
+        //call = NULL;
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"End"];
+        [self.viewController dismissViewControllerAnimated:YES completion:nil];
+    }
+    else if (state == LinphoneCallIncomingReceived) {
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Incoming"];
+        self.showCallView;
+    }
+    if (pluginResult) {
+        [theLinhone.commandDelegate sendPluginResult:pluginResult callbackId:callCallBackID];
+    }
+}
+
+- (void)listenCall:(CDVInvokedUrlCommand*)command {
+    theLinhone = self;
+    callCallBackID = command.callbackId;
+    [NSNotificationCenter.defaultCenter removeObserver:self
+     name:@"LinphoneCallUpdate"
+     object:nil];
+    [NSNotificationCenter.defaultCenter addObserver:self
+     selector:@selector(onCallStateChanged:)
+     name:@"LinphoneCallUpdate"
+     object:nil];
+    NSLog(@"Listen call");
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Idle"];
+    [pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
+    [theLinhone.commandDelegate sendPluginResult:pluginResult callbackId:callCallBackID];
+}
+
+- (void)onRegistrationChanged:(NSNotification *)notif {
+    NSDictionary *dict = notif.userInfo;
+    NSLog(@"Status: %s", [dict[@"status"] UTF8String]);
+    lc = LinphoneManager.getLc;
+    NSString *result = nil;
+    if ([dict[@"status"] isEqual: @"LinphoneRegistrationOk"]) {
+        result = @"RegistrationSuccess";
+    } else if ([dict[@"status"] isEqual: @"LinphoneRegistrationFailed"]) {
+        result = @"RegistrationFailed";
+    }
+    if (result) {
+        NSLog(@"sending result: %s", [result UTF8String]);
+        NSLog(@"callback id: %s", [loginCallBackID UTF8String]);
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:result];
+        [theLinhone.commandDelegate sendPluginResult:pluginResult callbackId:loginCallBackID];
+    }
+}
+
+- (void)login:(CDVInvokedUrlCommand*)command {
+    theLinhone = self;
+    loginCallBackID = command.callbackId;
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"RegistrationProgress"];
+    [pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
+    [theLinhone.commandDelegate sendPluginResult:pluginResult callbackId:loginCallBackID];
     NSString* username = [command.arguments objectAtIndex:0];
+    NSLog(username);
     NSString* password = [command.arguments objectAtIndex:1];
     NSString* domain = [command.arguments objectAtIndex:2];
-    NSString* sip = [@"sip:" stringByAppendingString:[[username stringByAppendingString:@"@"] stringByAppendingString:domain]];
-    loginCallBackID = command.callbackId;
+    //NSString* sip = [@"sip:" stringByAppendingString:[[username stringByAppendingString:@"@"] stringByAppendingString:domain]];
+    NSString* sip = [@"sip:" stringByAppendingString:username];
+    [NSNotificationCenter.defaultCenter removeObserver:self
+     name:@"LinphoneRegistrationUpdate"
+     object:nil];
+    [NSNotificationCenter.defaultCenter addObserver:self
+     selector:@selector(onRegistrationChanged:)
+     name:@"LinphoneRegistrationUpdate"
+     object:nil];
     char* identity = (char*)[sip UTF8String];
 
-    if (lc == NULL) {
-        LinphoneCoreVTable vtable = {0};
-        
-        signal(SIGINT,stop);
-        /*
-         Fill the LinphoneCoreVTable with application callbacks.
-         All are optional. Here we only use the registration_state_changed callbacks
-         in order to get notifications about the progress of the registration.
-         */
-
-        vtable.registration_state_changed = registration_state_changed;
-        
-        /*
-         Fill the LinphoneCoreVTable with application callbacks.
-         All are optional. Here we only use the call_state_changed callbacks
-         in order to get notifications about the progress of the call.
-         */
-        vtable.call_state_changed = call_state_changed;
-        
-        lc = linphone_core_new(&vtable, NULL, NULL, NULL);
-    }
-    
+    lc = LinphoneManager.getLc;
+    linphone_core_clear_all_auth_info(lc);
+    linphone_core_clear_proxy_config(lc);
     LinphoneProxyConfig *proxy_cfg = linphone_core_create_proxy_config(lc);
     LinphoneAddress *from = linphone_address_new(identity);
     
     /*create authentication structure from identity*/
-    LinphoneAuthInfo *info=linphone_auth_info_new(linphone_address_get_username(from),NULL,(char*)[password UTF8String],NULL,(char*)[domain UTF8String],(char*)[domain UTF8String]);
-    linphone_core_add_auth_info(lc,info); /*add authentication info to LinphoneCore*/
+    LinphoneAuthInfo *info = linphone_auth_info_new(linphone_address_get_username(from), NULL, (char*)[password UTF8String], NULL, (char*)[domain UTF8String], (char*)[domain UTF8String]);
+    linphone_core_add_auth_info(lc, info); /*add authentication info to LinphoneCore*/
     
     // configure proxy entries
-    linphone_proxy_config_set_identity(proxy_cfg,identity); /*set identity with user name and domain*/
-    const char* server_addr = linphone_address_get_domain(from); /*extract domain address from identity*/
-    linphone_proxy_config_set_server_addr(proxy_cfg,server_addr); /* we assume domain = proxy server address*/
-    linphone_proxy_config_enable_register(proxy_cfg,TRUE); /*activate registration for this proxy config*/
+    linphone_proxy_config_set_identity(proxy_cfg, identity); /*set identity with user name and domain*/
+    //const char* server_addr = linphone_address_get_domain(from); /*extract domain address from identity*/
+    NSLog(domain);
+    const char* sip_address = (const char*)[[@"sip:" stringByAppendingString:domain] UTF8String];
+    //NSLog(sip_address);
+    //LinphoneAddress *proxy_address = linphone_address_new(sip_address);
+    //const char* server_addr = (const char*)[proxy_address UTF8String];
+    linphone_proxy_config_set_server_addr(proxy_cfg, sip_address); /* we assume domain = proxy server address*/
+    linphone_proxy_config_enable_register(proxy_cfg, TRUE); /*activate registration for this proxy config*/
     linphone_address_destroy(from); /*release resource*/
-    linphone_core_add_proxy_config(lc,proxy_cfg); /*add proxy config to linphone core*/
-    linphone_core_set_default_proxy(lc,proxy_cfg); /*set to default proxy*/
-    
-    /* main loop for receiving notifications and doing background linphonecore work: */
-    
-    //while(running){
-    //    linphone_core_iterate(lc); /* first iterate initiates registration */
-    //    ms_usleep(50000);
-    //}
-    call = NULL;
-    running = TRUE;
-    tListen = [NSTimer scheduledTimerWithTimeInterval: 0.05
-                                               target: self
-                                             selector:@selector(listenTick:)
-                                             userInfo: nil repeats:YES];
-    
-}
--(void)listenTick:(NSTimer *)timer {
-    linphone_core_iterate(lc);
-    
-
+    //linphone_address_destroy(proxy_address);
+    linphone_core_add_proxy_config(lc, proxy_cfg); /*add proxy config to linphone core*/
+    linphone_core_set_default_proxy(lc, proxy_cfg);
 }
 
-- (void)logout:(CDVInvokedUrlCommand*)command
-{
+- (void)logout:(CDVInvokedUrlCommand*)command {
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"OK"];
-    
+    lc = LinphoneManager.getLc;
     if(lc != NULL){
         LinphoneProxyConfig *proxy_cfg = linphone_core_create_proxy_config(lc);
         linphone_core_get_default_proxy(lc,&proxy_cfg); /* get default proxy config*/
@@ -178,25 +179,38 @@ static void call_state_changed(LinphoneCore *lc, LinphoneCall *call, LinphoneCal
         
         linphone_core_clear_all_auth_info(lc);
         linphone_core_clear_proxy_config(lc);
-        linphone_core_destroy(lc);
+        //linphone_core_destroy(lc);
         
         call = NULL;
-        lc = NULL;
+        //lc = NULL;
     }
     
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
-- (void)call:(CDVInvokedUrlCommand*)command
-{
+- (void)setStunServer:(CDVInvokedUrlCommand*)command {
+    NSString* stunServer = [[command arguments] objectAtIndex:0];
+    lc = LinphoneManager.getLc;
+    stunServer = @"stun4.l.google.com:19302";
+    NSLog(stunServer);
+    linphone_core_set_stun_server(lc, [stunServer UTF8String]);
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
+- (void)disableStunServer:(CDVInvokedUrlCommand*)command {
     
+}
+
+- (void)call:(CDVInvokedUrlCommand*)command {
     callCallBackID = command.callbackId;
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"OK"];
     NSString* address = [command.arguments objectAtIndex:0];
     NSString* displayName = [command.arguments objectAtIndex:1];
-    
+    lc = LinphoneManager.getLc;
     call = linphone_core_invite(lc, (char *)[address UTF8String]);
     linphone_call_ref(call);
+    self.showCallView;
 }
 
 - (void)videocall:(CDVInvokedUrlCommand*)command
@@ -218,7 +232,6 @@ static void call_state_changed(LinphoneCore *lc, LinphoneCall *call, LinphoneCal
     
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
-
 - (void)toggleVideo:(CDVInvokedUrlCommand*)command
 {
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"OK"];

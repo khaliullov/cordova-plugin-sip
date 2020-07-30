@@ -2,6 +2,8 @@
 #import <AudioToolbox/AudioToolbox.h>
 #include "linphone/linphonecore.h"
 
+#include "LinphoneManager.h"
+
 @interface Linphone : CDVPlugin{
     LinphoneCore *lc;
     LinphoneCall *call;
