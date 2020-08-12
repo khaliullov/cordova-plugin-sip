@@ -9,6 +9,8 @@ Add plugin and run:
 pod install --project-directory=platforms/ios
 ```
 
+Add `GoogleService-Info.plist` to the Resources of your project.
+
 <h3>Android </h3>
 
 Deploy and Run!

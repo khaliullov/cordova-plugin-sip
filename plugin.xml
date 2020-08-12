@@ -138,11 +138,17 @@
     <podspec>
         <config>
             <source url="https://gitlab.linphone.org/BC/public/podspec.git" />
+            <source url="https://github.com/CocoaPods/Specs.git" />
         </config>
         <pods use-frameworks="true">
-            <pod name="linphone-sdk" spec="4.4.0" />
-            <pod name="linphone-sdk/basic-frameworks" spec="~> 4.4.0" />
-            <pod name="linphone-sdk/app-extension-swift" spec="~> 4.4.0" />
+            <pod name="linphone-sdk" spec="4.4.1" />
+            <pod name="linphone-sdk/basic-frameworks" spec="~> 4.4.1" />
+            <pod name="linphone-sdk/app-extension-swift" spec="~> 4.4.1" />
+            <pod name="Firebase" />
+            <pod name="Firebase/Core" />
+            <pod name="Firebase/Analytics" />
+            <pod name="Firebase/Crashlytics" />
+            <pod name="Firebase/Messaging" />
         </pods>
     </podspec>
     <framework src="AVFoundation.framework" />

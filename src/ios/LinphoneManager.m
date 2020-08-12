@@ -20,6 +20,8 @@
 #import <AVFoundation/AVFoundation.h>
 #import <UserNotifications/UserNotifications.h>
 
+@import Firebase;
+
 #include "linphone/factory.h"
 #include "linphone/linphonecore_utils.h"
 
@@ -81,7 +83,6 @@ extern void libmscodec2_init(MSFactory *factory);
         _pushDict = [[NSMutableDictionary alloc] init];
         _database = NULL;
         _conf = FALSE;
-        _canConfigurePushTokenForProxyConfigs = FALSE;
         pushCallIDs = [[NSMutableArray alloc] init];
         [self renameDefaultSettings];
         [self copyDefaultSettings];
@@ -570,7 +571,8 @@ static int comp_call_state_paused(const LinphoneCall *call, const void *param) {
 }
 
 - (BOOL)enterBackgroundMode {
-    linphone_core_enter_background(LC);
+    NSLog(@"entering background...");
+    linphone_core_enter_background([LinphoneManager getLc]);
 
     LinphoneProxyConfig *proxyCfg = linphone_core_get_default_proxy_config(theLinphoneCore);
     BOOL shouldEnterBgMode = FALSE;
@@ -578,6 +580,7 @@ static int comp_call_state_paused(const LinphoneCall *call, const void *param) {
     // handle proxy config if any
     if (proxyCfg) {
         BOOL pushNotifEnabled = linphone_proxy_config_is_push_notification_allowed(proxyCfg);
+        NSLog(@"proxy config found: %i", pushNotifEnabled);
         if ([LinphoneManager.instance lpConfigBoolForKey:@"backgroundmode_preference"] || pushNotifEnabled) {
             if (floor(NSFoundationVersionNumber) <= NSFoundationVersionNumber_iOS_9_x_Max) {
                 // For registration register
@@ -585,7 +588,7 @@ static int comp_call_state_paused(const LinphoneCall *call, const void *param) {
             }
         }
 
-        if ([LinphoneManager.instance lpConfigBoolForKey:@"voip_mode_preference"] && [LinphoneManager.instance lpConfigBoolForKey:@"backgroundmode_preference"] && !pushNotifEnabled) {
+        if ([LinphoneManager.instance lpConfigBoolForKey:@"backgroundmode_preference"] && !pushNotifEnabled) {
             // Keep this!! Socket VoIP is deprecated after 9.0, but sometimes it's the only way to keep the phone background and receive the call. For example, when there is only local area network.
             // register keepalive
             if ([[UIApplication sharedApplication]
@@ -641,7 +644,8 @@ static int comp_call_state_paused(const LinphoneCall *call, const void *param) {
 }
 
 - (void)becomeActive {
-    linphone_core_enter_foreground(LC);
+    NSLog(@"returning to foreground");
+    linphone_core_enter_foreground([LinphoneManager getLc]);
 
     // enable presence
     if (floor(NSFoundationVersionNumber) <= NSFoundationVersionNumber_iOS_9_x_Max) {
@@ -677,9 +681,10 @@ static int comp_call_state_paused(const LinphoneCall *call, const void *param) {
 }
 
 - (void)refreshRegisters {
+    NSLog(@"refreshing registers");
     linphone_core_refresh_registers(theLinphoneCore); // just to make sure REGISTRATION is up to date
 }
-
+    
 - (void)copyDefaultSettings {
     NSString *src = [LinphoneManager bundleFile:@"linphonerc"];
     NSString *srcIpad = [LinphoneManager bundleFile:@"linphonerc~ipad"];
@@ -701,6 +706,80 @@ static int comp_call_state_paused(const LinphoneCall *call, const void *param) {
     _configDb = lp_config_new_with_factory([confiFileName UTF8String], [factory UTF8String]);
     //_configDb = linphone_config_new_for_shared_core(kLinphoneMsgNotificationAppGroupId.UTF8String, @"linphonerc".UTF8String, factory.UTF8String);
     lp_config_clean_entry(_configDb, "misc", "max_calls");
+}
+
+#pragma mark - Property Functions
+
+- (void)setRemoteNotificationToken:(NSData *)remoteNotificationToken {
+    if (remoteNotificationToken == _remoteNotificationToken) {
+        return;
+    }
+    _remoteNotificationToken = remoteNotificationToken;
+
+    [self configurePushTokenForProxyConfigs];
+}
+
+- (void)configurePushTokenForProxyConfigs {
+    @try {
+        const MSList *proxies = linphone_core_get_proxy_config_list(theLinphoneCore);
+        while (proxies) {
+            [self configurePushTokenForProxyConfig:proxies->data];
+            proxies = proxies->next;
+        }
+    } @catch (NSException* e) {
+        LOGW(@"%s: linphone core not ready yet, ignoring push token", __FUNCTION__);
+    }
+
+}
+
+- (void)configurePushTokenForProxyConfig:(LinphoneProxyConfig *)proxyCfg {
+    linphone_proxy_config_edit(proxyCfg);
+
+    NSData *remoteTokenData = _remoteNotificationToken;
+    BOOL pushNotifEnabled = linphone_proxy_config_is_push_notification_allowed(proxyCfg);
+    NSLog(@"preparing for setting token");
+    if ((remoteTokenData != nil) && pushNotifEnabled) {
+        NSLog(@"setting token...");
+
+        NSString* token = [[NSString alloc] initWithData:remoteTokenData encoding:NSUTF8StringEncoding];
+        NSLog(token);
+
+        // NSLocalizedString(@"IC_MSG", nil); // Fake for genstrings
+        // NSLocalizedString(@"IM_MSG", nil); // Fake for genstrings
+        // NSLocalizedString(@"IM_FULLMSG", nil); // Fake for genstrings
+        NSString *ring =
+            ([LinphoneManager bundleFile:[self lpConfigStringForKey:@"local_ring" inSection:@"sound"].lastPathComponent]
+             ?: [LinphoneManager bundleFile:@"notes_of_the_optimistic.caf"])
+            .lastPathComponent;
+
+        NSString *timeout;
+        if (floor(NSFoundationVersionNumber) > NSFoundationVersionNumber_iOS_9_x_Max) {
+            timeout = @";pn-timeout=0";
+        } else {
+            timeout = @"";
+        }
+
+        
+        NSString *appId = [[[FIRApp defaultApp] options] GCMSenderID];
+        NSLog(@"GCMSenderID: %@", appId);
+
+        NSString *params = [NSString
+                    stringWithFormat:@"pn-type=firebase;pn-tok=%@;"
+                            @"app-id=%@;pn-call-snd=%@%@;pn-silent=1",
+                            token, appId, ring, timeout];
+
+        LOGI(@"Proxy config %s configured for push notifications with contact: %@",
+        linphone_proxy_config_get_identity(proxyCfg), params);
+        linphone_proxy_config_set_contact_uri_parameters(proxyCfg, [params UTF8String]);
+        linphone_proxy_config_set_contact_parameters(proxyCfg, NULL);
+    } else {
+        LOGI(@"Proxy config %s NOT configured for push notifications", linphone_proxy_config_get_identity(proxyCfg));
+        // no push token:
+        linphone_proxy_config_set_contact_uri_parameters(proxyCfg, NULL);
+        linphone_proxy_config_set_contact_parameters(proxyCfg, NULL);
+    }
+
+    linphone_proxy_config_done(proxyCfg);
 }
 
 #pragma mark - Misc Functions

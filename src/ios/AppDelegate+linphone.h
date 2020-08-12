@@ -6,7 +6,13 @@
 //
 //
 
+@import UserNotifications;
+
 #import "AppDelegate.h"
 
-@interface AppDelegate (linphone)
+
+extern NSString *const pushPluginApplicationDidBecomeActiveNotification;
+
+
+@interface AppDelegate (linphone) <UNUserNotificationCenterDelegate>
 @end

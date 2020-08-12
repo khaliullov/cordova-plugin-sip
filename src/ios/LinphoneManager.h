@@ -106,7 +106,6 @@ typedef struct _LinphoneManagerSounds {
 
 @property(strong, nonatomic) NSString *SSID;
 @property (readonly) sqlite3* database;
-@property(nonatomic, strong) NSData *pushKitToken;
 @property(nonatomic, strong) NSData *remoteNotificationToken;
 @property (readonly) LinphoneManagerSounds sounds;
 @property (nonatomic, assign) BOOL bluetoothAvailable;
@@ -114,7 +113,6 @@ typedef struct _LinphoneManagerSounds {
 @property (readonly) LpConfig *configDb;
 @property BOOL conf;
 @property NSDictionary *pushDict;
-@property (nonatomic, assign) BOOL canConfigurePushTokenForProxyConfigs; // used to register at the right time when receiving push notif tokens
 
 @end
 

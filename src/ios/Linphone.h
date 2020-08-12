@@ -12,6 +12,7 @@
 @property (nonatomic) LinphoneCore *lc;
 @property (nonatomic) LinphoneCall *call;
 
+- (void)showCallView;
 - (void)acceptCall:(CDVInvokedUrlCommand*)command;
 - (void)listenCall:(CDVInvokedUrlCommand*)command;
 - (void)login:(CDVInvokedUrlCommand*)command;

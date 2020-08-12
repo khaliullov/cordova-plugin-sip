@@ -43,15 +43,52 @@ static CallViewController *callViewController;
         lc = LinphoneManager.getLc;
         //sipViewController.setCore(lc);
     }
-      [self.viewController presentViewController:callViewController animated:YES completion:nil];
-    
+    if ([[UIApplication sharedApplication] applicationState] != UIApplicationStateActive) {
+        NSLog(@"won't open call dialog: application is not active");
+        return;
+    }
+    self->lc = LinphoneManager.getLc;
+    linphone_core_ensure_registered(self->lc);
+    self->call = linphone_core_get_current_call(self->lc);
+    if (self->call == nil) {
+        if (linphone_core_get_calls_nb(self->lc) == 1) {
+            self->call = (LinphoneCall *)linphone_core_get_calls(self->lc)->data;
+            NSLog(@"call was found using helper");
+        } else {
+            NSLog(@"failed to open call dialog: call not found. on line: %i", linphone_core_get_calls_nb(self->lc));
+            return;
+        }
+    }
+    if (!callViewController.isBeingPresented) {
+        NSLog(@"presenting call dialog");
+        [self.viewController presentViewController: callViewController animated:YES completion:^{
+            NSLog(@"incall window opened");
+            if (linphone_call_get_dir(self->call) == LinphoneCallIncoming) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    LinphoneCallParams *lcallParams = linphone_core_create_call_params(self->lc, self->call);
+                    if (lcallParams) {
+                        //return;
+                        linphone_call_params_enable_audio(lcallParams, FALSE);
+                        linphone_call_params_enable_video(lcallParams, TRUE);
+                        //linphone_call_params_set_video_direction(lcallParams, LinphoneMediaDirectionRecvOnly);
+                        linphone_call_params_set_audio_direction(lcallParams, LinphoneMediaDirectionInactive);
+                        NSLog(@"accept early media");
+                        linphone_core_accept_early_media_with_params(self->lc, self->call, lcallParams);
+                        linphone_call_params_unref(lcallParams);
+                    }
+                });
+            }
+        }];
+    } else {
+        NSLog(@"call dialog is already opened");
+    }
     if (!remoteView) {
         remoteView = [[UIView alloc] initWithFrame:CGRectMake(0,0,320,240)];
         remoteView.backgroundColor=[UIColor blackColor];
         [callViewController.view addSubview:remoteView];
         linphone_core_set_native_video_window_id(lc, (__bridge void *)remoteView);
+        NSLog(@"remote view added");
     }
-
 }
 
 - (void)onCallStateChanged:(NSNotification *)notif {
@@ -74,7 +111,7 @@ static CallViewController *callViewController;
     }
     else if (state == LinphoneCallIncomingReceived) {
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Incoming"];
-        self.showCallView;
+        // self.showCallView;
     }
     if (pluginResult) {
         [theLinhone.commandDelegate sendPluginResult:pluginResult callbackId:callCallBackID];
@@ -158,6 +195,15 @@ static CallViewController *callViewController;
     linphone_proxy_config_enable_register(proxy_cfg, TRUE); /*activate registration for this proxy config*/
     linphone_address_destroy(from); /*release resource*/
     //linphone_address_destroy(proxy_address);
+    linphone_proxy_config_set_push_notification_allowed(proxy_cfg, true);
+    LinphoneManager* linphoneManager = [LinphoneManager instance];
+    if ([linphoneManager remoteNotificationToken]) {
+        NSLog(@"setting remote push token");
+        [linphoneManager configurePushTokenForProxyConfig:proxy_cfg];
+    }
+    // TODO replace this by sending notifications all the time
+    linphone_proxy_config_set_expires(proxy_cfg, 604800);
+    NSLog(@"registration expires: %i", linphone_proxy_config_get_expires(proxy_cfg));
     linphone_core_add_proxy_config(lc, proxy_cfg); /*add proxy config to linphone core*/
     linphone_core_set_default_proxy(lc, proxy_cfg);
 }
