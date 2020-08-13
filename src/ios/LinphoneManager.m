@@ -212,23 +212,17 @@ static void linphone_iphone_global_state_changed(LinphoneCore *lc, LinphoneGloba
 
 #pragma mark - Configuring status changed
 
-static void linphone_iphone_configuring_status_changed(LinphoneCore *lc, LinphoneConfiguringState status,
-                               const char *message) {
+static void linphone_iphone_configuring_status_changed(LinphoneCore *lc, LinphoneConfiguringState status, const char *message) {
     [(__bridge LinphoneManager *)linphone_core_cbs_get_user_data(linphone_core_get_current_callbacks(lc)) onConfiguringStatusChanged:status withMessage:message];
 }
 
 - (void)onConfiguringStatusChanged:(LinphoneConfiguringState)status withMessage:(const char *)message {
-    LOGI(@"onConfiguringStatusChanged: %s %@", linphone_configuring_state_to_string(status),
-         message ? [NSString stringWithFormat:@"(message: %s)", message] : @"");
-    NSDictionary *dict = [NSDictionary
-                  dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:status], @"state",
-                  [NSString stringWithUTF8String:message ? message : ""], @"message", nil];
+    LOGI(@"onConfiguringStatusChanged: %s %@", linphone_configuring_state_to_string(status), message ? [NSString stringWithFormat:@"(message: %s)", message] : @"");
+    NSDictionary *dict = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:status], @"state", [NSString stringWithUTF8String:message ? message : ""], @"message", nil];
 
     // dispatch the notification asynchronously
     dispatch_async(dispatch_get_main_queue(), ^(void) {
-            [NSNotificationCenter.defaultCenter postNotificationName:kLinphoneConfiguringStateUpdate
-             object:self
-             userInfo:dict];
+            [NSNotificationCenter.defaultCenter postNotificationName:kLinphoneConfiguringStateUpdate object:self userInfo:dict];
         });
 }
 

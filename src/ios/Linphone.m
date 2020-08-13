@@ -16,6 +16,7 @@ static UIView *remoteView;
 static CallViewController *callViewController;
 
 - (void)acceptCall:(CDVInvokedUrlCommand*)command {
+    NSLog(@"accept call");
     lc = LinphoneManager.getLc;
     call = linphone_core_get_current_call(lc);
     LinphoneCallParams *lcallParams = linphone_core_create_call_params(lc, call);
@@ -27,8 +28,8 @@ static CallViewController *callViewController;
     linphone_call_params_enable_audio(lcallParams, FALSE);
 
     //[self.commandDelegate runInBackground:^{
-        //linphone_core_accept_call_with_params(lc, call, lcallParams);
-        linphone_core_accept_early_media_with_params(lc, call, lcallParams);
+        linphone_core_accept_call_with_params(lc, call, lcallParams);
+        //linphone_core_accept_early_media_with_params(lc, call, lcallParams);
         linphone_call_params_destroy(lcallParams);
     //}];
     
@@ -55,6 +56,7 @@ static CallViewController *callViewController;
             self->call = (LinphoneCall *)linphone_core_get_calls(self->lc)->data;
             NSLog(@"call was found using helper");
         } else {
+            linphone_core_refresh_registers(self->lc);
             NSLog(@"failed to open call dialog: call not found. on line: %i", linphone_core_get_calls_nb(self->lc));
             return;
         }
@@ -111,7 +113,7 @@ static CallViewController *callViewController;
     }
     else if (state == LinphoneCallIncomingReceived) {
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Incoming"];
-        // self.showCallView;
+        self.showCallView;
     }
     if (pluginResult) {
         [theLinhone.commandDelegate sendPluginResult:pluginResult callbackId:callCallBackID];
@@ -141,6 +143,8 @@ static CallViewController *callViewController;
     NSString *result = nil;
     if ([dict[@"status"] isEqual: @"LinphoneRegistrationOk"]) {
         result = @"RegistrationSuccess";
+    } else if ([dict[@"status"] isEqual: @"LinphoneRegistrationProgress"]) {
+            result = @"RegistrationProgress";
     } else if ([dict[@"status"] isEqual: @"LinphoneRegistrationFailed"]) {
         result = @"RegistrationFailed";
     }
@@ -155,25 +159,40 @@ static CallViewController *callViewController;
 - (void)login:(CDVInvokedUrlCommand*)command {
     theLinhone = self;
     loginCallBackID = command.callbackId;
+    self->lc = LinphoneManager.getLc;
+    NSString* username = [command.arguments objectAtIndex:0];
+    NSString* password = [command.arguments objectAtIndex:1];
+    NSString* domain = [command.arguments objectAtIndex:2];
+    NSString* sip = [@"sip:" stringByAppendingString:username];
+    char* identity = (char*)[sip UTF8String];
+    const char* sip_address = (const char*)[[@"sip:" stringByAppendingString:domain] UTF8String];
+
+    [NSNotificationCenter.defaultCenter removeObserver:self name:@"LinphoneRegistrationUpdate" object:nil];
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(onRegistrationChanged:) name:@"LinphoneRegistrationUpdate" object:nil];
+
+    // check if there we already configured with such config
+    const MSList *proxies = linphone_core_get_proxy_config_list(self->lc);
+    while (proxies) {
+        LinphoneProxyConfig *proxy_cfg = proxies->data;
+        //linphone_proxy_config_get_identity_address(proxy_cfg);
+        const char *existing_identity = linphone_proxy_config_get_identity(proxy_cfg);
+        const char *existing_domain = linphone_proxy_config_get_server_addr(proxy_cfg);
+        if (strcmp(existing_identity,  sip.UTF8String) == 0 && strcmp(existing_domain,  sip_address) == 0) {
+            LinphoneRegistrationState state = linphone_proxy_config_get_state(proxy_cfg);
+            const char* status = linphone_registration_state_to_string(state);
+            NSDictionary *dict =
+                [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:state], @"state", @(status), @"status", nil];
+            [NSNotificationCenter.defaultCenter postNotificationName:@"LinphoneRegistrationUpdate" object:self userInfo:dict];
+            return;  // do not reconnect! why?s
+        }
+        proxies = proxies->next;
+    }
+
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"RegistrationProgress"];
     [pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
     [theLinhone.commandDelegate sendPluginResult:pluginResult callbackId:loginCallBackID];
-    NSString* username = [command.arguments objectAtIndex:0];
-    NSLog(username);
-    NSString* password = [command.arguments objectAtIndex:1];
-    NSString* domain = [command.arguments objectAtIndex:2];
     //NSString* sip = [@"sip:" stringByAppendingString:[[username stringByAppendingString:@"@"] stringByAppendingString:domain]];
-    NSString* sip = [@"sip:" stringByAppendingString:username];
-    [NSNotificationCenter.defaultCenter removeObserver:self
-     name:@"LinphoneRegistrationUpdate"
-     object:nil];
-    [NSNotificationCenter.defaultCenter addObserver:self
-     selector:@selector(onRegistrationChanged:)
-     name:@"LinphoneRegistrationUpdate"
-     object:nil];
-    char* identity = (char*)[sip UTF8String];
 
-    lc = LinphoneManager.getLc;
     linphone_core_clear_all_auth_info(lc);
     linphone_core_clear_proxy_config(lc);
     LinphoneProxyConfig *proxy_cfg = linphone_core_create_proxy_config(lc);
@@ -186,8 +205,6 @@ static CallViewController *callViewController;
     // configure proxy entries
     linphone_proxy_config_set_identity(proxy_cfg, identity); /*set identity with user name and domain*/
     //const char* server_addr = linphone_address_get_domain(from); /*extract domain address from identity*/
-    NSLog(domain);
-    const char* sip_address = (const char*)[[@"sip:" stringByAppendingString:domain] UTF8String];
     //NSLog(sip_address);
     //LinphoneAddress *proxy_address = linphone_address_new(sip_address);
     //const char* server_addr = (const char*)[proxy_address UTF8String];

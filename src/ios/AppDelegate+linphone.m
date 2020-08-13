@@ -80,6 +80,7 @@ BOOL fromPush;
     [[LinphoneManager instance] becomeActive];
     NSLog(@"Entered foreground");
     if (fromPush) {
+        fromPush = FALSE;
         [self showIncomingDialog];
         NSLog(@"opened from push notification");
     }

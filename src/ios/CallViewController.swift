@@ -24,7 +24,16 @@ class CallViewController: UIViewController {
     }
 
     override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
         acceptButton?.isEnabled = true
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        NSLog("call dialog hidden");
+        if (self.isBeingDismissed) {
+            self.hangUp()
+        }
     }
 
     @objc public func hangUp() {
