@@ -109,6 +109,17 @@
         <param name="ios-package" value="Linphone"/>
       </feature>
     </config-file>
+    <config-file target="*-Info.plist" parent="UIBackgroundModes">
+      <array>
+        <string>remote-notification</string>
+      </array>
+    </config-file>
+    <config-file target="*-Debug.plist" parent="aps-environment">
+      <string>development</string>
+    </config-file>
+    <config-file target="*-Release.plist" parent="aps-environment">
+      <string>production</string>
+    </config-file>
     <hook type="after_plugin_install" src="scripts/after_plugin_install_ios.js" />
     <resource-file src="src/android/res/raw/ringback.wav"/>
     <resource-file src="src/android/res/raw/rootca.pem"/>
