@@ -351,6 +351,7 @@ public class LinphoneMiniManager implements CoreListener {
                     if (!lpc.isPushNotificationAllowed()) {
                         lpc.edit();
                         lpc.setContactUriParameters(null);
+                        lpc.setExpires(3600 * 72);
                         lpc.done();
                         if (lpc.getIdentityAddress() != null)
                             android.util.Log.d(TAG,
@@ -372,6 +373,7 @@ public class LinphoneMiniManager implements CoreListener {
                                 || prevContactParams.compareTo(contactInfos) != 0) {
                             lpc.edit();
                             lpc.setContactUriParameters(contactInfos);
+                            lpc.setExpires(3600 * 72);
                             lpc.done();
                             if (lpc.getIdentityAddress() != null)
                                 android.util.Log.d(TAG,
@@ -612,7 +614,6 @@ public class LinphoneMiniManager implements CoreListener {
         proxyCfg.edit();
         proxyCfg.setIdentityAddress(address);
         proxyCfg.setServerAddr(proxyAddress.asStringUriOnly());
-        proxyCfg.done();
 
         if (port != 0) {
             proxyCfg.setRoute(proxyAddress.getDomain() + ':' + port);
@@ -621,6 +622,9 @@ public class LinphoneMiniManager implements CoreListener {
         android.util.Log.d(TAG, "auth: " + address.getUsername() + " " + password + " " + address.getDomain() + " - " + proxyAddress.asStringUriOnly());
 
         proxyCfg.enableRegister(true);
+        proxyCfg.setExpires(86400 * 30);
+        proxyCfg.done();
+
         mCore.addProxyConfig(proxyCfg);
         mCore.setDefaultProxyConfig(proxyCfg);
 

@@ -8,6 +8,8 @@ import org.linphone.core.Core;
 
 import java.util.Map;
 
+import ru.simdev.livetex.firebase.FirebaseMessageReceiver;
+
 public class LinphoneFirebaseMessaging extends FirebaseMessagingService {
     private static final String TAG = "LinphoneSip";
 
@@ -47,15 +49,21 @@ public class LinphoneFirebaseMessaging extends FirebaseMessagingService {
                     }
                 }
         );
+
+        FirebaseMessageReceiver.saveToken(this, token);
     }
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
-        android.util.Log.d(TAG, "[Push Notification] Received");
+        android.util.Log.d(TAG, "[Push Notification] Received " + remoteMessage.getFrom());
 
-        Map<String, String> params = remoteMessage.getData();
-        JSONObject object = new JSONObject(params);
+        if (remoteMessage.getNotification() == null) {
+            Map<String, String> params = remoteMessage.getData();
+            JSONObject object = new JSONObject(params);
 
-        LinphoneContext.dispatchOnUIThread(mPushReceivedRunnable);
+            LinphoneContext.dispatchOnUIThread(mPushReceivedRunnable);
+        } else {
+            FirebaseMessageReceiver.sendNotification(this, remoteMessage);
+        }
     }
 }
