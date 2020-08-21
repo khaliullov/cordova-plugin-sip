@@ -37,6 +37,17 @@ static CallViewController *callViewController;
 
 }
 
+- (UIViewController*) topMostController
+{
+    UIViewController *topController = [UIApplication sharedApplication].keyWindow.rootViewController;
+
+    while (topController.presentedViewController) {
+        topController = topController.presentedViewController;
+    }
+
+    return topController;
+}
+
 - (void)showCallView {
     if (!callViewController) {
         UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Linphone" bundle:nil];
@@ -61,7 +72,14 @@ static CallViewController *callViewController;
             return;
         }
     }
-    if (!callViewController.isBeingPresented) {
+    UIViewController *topMostController = [self topMostController];
+    if (callViewController.isBeingPresented || topMostController == callViewController) {
+        NSLog(@"call dialog is already opened");
+    } else {
+        if ([self viewController] != topMostController) {
+            NSLog(@"closing all modal windows");
+            [[self viewController] dismissViewControllerAnimated:false completion:nil];
+        }
         NSLog(@"presenting call dialog");
         [self.viewController presentViewController: callViewController animated:YES completion:^{
             NSLog(@"incall window opened");
@@ -81,8 +99,6 @@ static CallViewController *callViewController;
                 });
             }
         }];
-    } else {
-        NSLog(@"call dialog is already opened");
     }
     if (!remoteView) {
         remoteView = [[UIView alloc] initWithFrame:CGRectMake(0,0,320,240)];

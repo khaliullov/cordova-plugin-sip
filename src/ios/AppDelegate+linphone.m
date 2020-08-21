@@ -1,6 +1,6 @@
 //
-//  AppDelegate+notification.m
-//  pushtest
+//  AppDelegate+linphone.m
+//  cordova-plugin-sip
 //
 //  Created by Robert Easterday on 10/26/12.
 //
@@ -15,12 +15,10 @@
 @import FirebaseInstanceID;
 
 
-NSString *const pushPluginApplicationDidBecomeActiveNotification = @"pushPluginApplicationDidBecomeActiveNotification";
-
-
 @implementation AppDelegate (linphone)
 
-BOOL fromPush;
+BOOL linphoneFromPush;
+BOOL linphoneSwapped;
 
 - (id) getCommandInstance:(NSString*)className
 {
@@ -33,10 +31,11 @@ BOOL fromPush;
 {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
+        NSLog(@"linphone: installing swizzle");
         Class class = [self class];
 
         SEL originalSelector = @selector(init);
-        SEL swizzledSelector = @selector(swizzled_init);
+        SEL swizzledSelector = @selector(linphone_swizzled_init);
 
         Method original = class_getInstanceMethod(class, originalSelector);
         Method swizzled = class_getInstanceMethod(class, swizzledSelector);
@@ -58,44 +57,45 @@ BOOL fromPush;
     });
 }
 
-- (AppDelegate *)swizzled_init
+- (AppDelegate *)linphone_swizzled_init
 {
+    NSLog(@"linphone swizzled init");
     UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
     center.delegate = self;
 
-    [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(onApplicationDidBecomeActive:) name:UIApplicationDidBecomeActiveNotification object:nil];
+    [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(linphoneOnApplicationDidBecomeActive:) name:UIApplicationDidBecomeActiveNotification object:nil];
 
-    [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(onApplicationDidEnterBackground:) name:UIApplicationDidEnterBackgroundNotification object:nil];
+    [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(linphoneOnApplicationDidEnterBackground:) name:UIApplicationDidEnterBackgroundNotification object:nil];
 
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(initLinphoneCore:) name:@"UIApplicationDidFinishLaunchingNotification" object:nil];
 
     // This actually calls the original init method over in AppDelegate. Equivilent to calling super
     // on an overrided method, this is not recursive, although it appears that way. neat huh?
-    return [self swizzled_init];
+    return [self linphone_swizzled_init];
 }
 
-- (void)onApplicationDidBecomeActive:(NSNotification *)notification
+- (void)linphoneOnApplicationDidBecomeActive:(NSNotification *)notification
 {
-    NSLog(@"onApplicationDidBecomeActive");
+    NSLog(@"linphone onApplicationDidBecomeActive");
     [[LinphoneManager instance] becomeActive];
     NSLog(@"Entered foreground");
-    if (fromPush) {
-        fromPush = FALSE;
+    if (linphoneFromPush) {
+        linphoneFromPush = FALSE;
         [self showIncomingDialog];
         NSLog(@"opened from push notification");
     }
 }
 
-- (void)onApplicationDidEnterBackground:(NSNotification *)notification
+- (void)linphoneOnApplicationDidEnterBackground:(NSNotification *)notification
 {
-    NSLog(@"onApplicationDidEnterBackground");
+    NSLog(@"linphone onApplicationDidEnterBackground");
     [[LinphoneManager instance] enterBackgroundMode];
     NSLog(@"Entered background");
 }
 
 //  FCM refresh token
 //  Unclear how this is testable under normal circumstances
-- (void)onTokenRefresh {
+- (void)linphoneOnTokenRefresh {
 #if !TARGET_IPHONE_SIMULATOR
     // A rotation of the registration tokens is happening, so the app needs to request a new token.
     NSLog(@"The FCM registration token needs to be changed.");
@@ -113,23 +113,23 @@ BOOL fromPush;
 }
 
 // contains error info
-- (void)sendDataMessageFailure:(NSNotification *)notification {
+- (void)linphoneSendDataMessageFailure:(NSNotification *)notification {
     NSLog(@"sendDataMessageFailure");
 }
 
-- (void)sendDataMessageSuccess:(NSNotification *)notification {
+- (void)linphoneSendDataMessageSuccess:(NSNotification *)notification {
     NSLog(@"sendDataMessageSuccess");
 }
 
-- (void)didSendDataMessageWithID:messageID {
+- (void)linphoneDidSendDataMessageWithID:messageID {
     NSLog(@"didSendDataMessageWithID");
 }
 
-- (void)willSendDataMessageWithID:messageID error:error {
+- (void)linphoneWillSendDataMessageWithID:messageID error:error {
     NSLog(@"willSendDataMessageWithID");
 }
 
-- (void)didDeleteMessagesOnServer {
+- (void)linphoneDidDeleteMessagesOnServer {
     NSLog(@"didDeleteMessagesOnServer");
     // Some messages sent to this device were deleted on the GCM server before reception, likely
     // because the TTL expired. The client should notify the app server of this, so that the app
@@ -141,61 +141,68 @@ BOOL fromPush;
     [linphone showCallView];
 }
 
-- (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler
+- (void)linphoneApplication:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler
 {
-    NSLog(@"Received Remote notification");
-    if(application.applicationState != UIApplicationStateActive) {
-        fromPush = TRUE;
+    NSLog(@"linphone Received Remote notification");
+    if (linphoneSwapped) {  // call swizzled method
+        [self linphoneApplication:application didReceiveRemoteNotification:userInfo fetchCompletionHandler:completionHandler];
+    }
+    if ([userInfo[@"aps"][@"category"] isEqual: @"incoming_call"]) {
+        NSLog(@"incoming call");
+        if(application.applicationState != UIApplicationStateActive) {
+            linphoneFromPush = TRUE;
+        } else {
+            [self showIncomingDialog];
+            NSLog(@"received push notification while foreground");
+            linphoneFromPush = FALSE;
+        }
     } else {
-        [self showIncomingDialog];
-        NSLog(@"received push notification while foreground");
-        fromPush = FALSE;
+        linphoneFromPush = FALSE;
     }
     completionHandler(UIBackgroundFetchResultNoData);
-    //this.completionHandler = completionHandler;
-    //[this dispatchPushEvent:userInfo];
-    //[self application:application didReceiveRemoteNotification:userInfo fetchCompletionHandler:completionHandler];
 }
 
-- (void)setupPushHandlers
+- (void)linphoneSetupPushHandlers
 {
     // this = self;
     if ([[[UIApplication sharedApplication] delegate] respondsToSelector:@selector(application:didReceiveRemoteNotification:fetchCompletionHandler:)]) {
-        NSLog(@"swapping listener");
+        NSLog(@"linphone swapping listener");
         Method original, swizzled;
-        original = class_getInstanceMethod([self class], @selector(application:didReceiveRemoteNotification:fetchCompletionHandler:));
+        original = class_getInstanceMethod([self class], @selector(linphoneApplication:didReceiveRemoteNotification:fetchCompletionHandler:));
         swizzled = class_getInstanceMethod([[[UIApplication sharedApplication] delegate] class], @selector(application:didReceiveRemoteNotification:fetchCompletionHandler:));
         method_exchangeImplementations(original, swizzled);
+        linphoneSwapped = TRUE;
     } else {
-        NSLog(@"adding listener");
-        class_addMethod([[[UIApplication sharedApplication] delegate] class], @selector(application:didReceiveRemoteNotification:fetchCompletionHandler:), class_getMethodImplementation([self class], @selector(application:didReceiveRemoteNotification:fetchCompletionHandler:)), nil);
+        NSLog(@"linphone adding listener");
+        class_addMethod([[[UIApplication sharedApplication] delegate] class], @selector(application:didReceiveRemoteNotification:fetchCompletionHandler:), class_getMethodImplementation([self class], @selector(linphoneApplication:didReceiveRemoteNotification:fetchCompletionHandler:)), nil);
+        linphoneSwapped = FALSE;
     }
 }
 
 - (void)initPushNotifications {
-    if ([FIRApp defaultApp] == nil) {
-        NSLog(@"configuring Firebase");
-        [FIRApp configure];
-
-        // TODO check if this works with other plugins with using Firebase
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if ([FIRApp defaultApp] == nil) {
+            NSLog(@"linphone configuring Firebase");
+            [FIRApp configure];
+        }
         [[NSNotificationCenter defaultCenter]
-         addObserver:self selector:@selector(onTokenRefresh)
+         addObserver:self selector:@selector(linphoneOnTokenRefresh)
          name:kFIRInstanceIDTokenRefreshNotification object:nil];
 
         [[NSNotificationCenter defaultCenter]
-         addObserver:self selector:@selector(sendDataMessageFailure:)
+         addObserver:self selector:@selector(linphoneSendDataMessageFailure:)
          name:FIRMessagingSendErrorNotification object:nil];
 
         [[NSNotificationCenter defaultCenter]
-         addObserver:self selector:@selector(sendDataMessageSuccess:)
+         addObserver:self selector:@selector(linphoneSendDataMessageSuccess:)
          name:FIRMessagingSendSuccessNotification object:nil];
 
         [[NSNotificationCenter defaultCenter]
-         addObserver:self selector:@selector(didDeleteMessagesOnServer)
+         addObserver:self selector:@selector(linphoneDidDeleteMessagesOnServer)
          name:FIRMessagingMessagesDeletedNotification object:nil];
-        [self setupPushHandlers];
-    }
-    if (![self permissionState]) {
+        [self linphoneSetupPushHandlers];
+    });
+    if (![self linphonePermissionState]) {
         NSLog(@"push notifications are not registered");
         if ([UNUserNotificationCenter class] != nil) {
           // iOS 10 or later
@@ -221,7 +228,7 @@ BOOL fromPush;
     }
 }
 
-- (BOOL)permissionState
+- (BOOL)linphonePermissionState
 {
     if ([[UIApplication sharedApplication] respondsToSelector:@selector(isRegisteredForRemoteNotifications)])
     {
@@ -233,7 +240,7 @@ BOOL fromPush;
 
 - (void)initLinphoneCore:(NSNotification *)notification
 {
-    fromPush = FALSE;
+    linphoneFromPush = FALSE;
     [self initPushNotifications];
     NSLog(@"initLinphoneCore");
     [[LinphoneManager instance] launchLinphoneCore];
@@ -246,6 +253,7 @@ BOOL fromPush;
     NSLog(@"dealloc");
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidBecomeActiveNotification object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidEnterBackgroundNotification object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidFinishLaunchingNotification object:nil];
 
     [[LinphoneManager instance] destroyLinphoneCore];
 }

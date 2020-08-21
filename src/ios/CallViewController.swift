@@ -23,9 +23,14 @@ class CallViewController: UIViewController {
         //lc?.addDelegate(delegate: manager)
     }
 
+    @objc public func resetButtons() {
+        acceptButton?.isEnabled = true
+        declineButton?.isEnabled = true
+    }
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        acceptButton?.isEnabled = true
+        self.resetButtons()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -85,31 +90,25 @@ class CallViewController: UIViewController {
     }
 
     func initButtons() {
-        NSLog("searching for buttons");
         //for case let subview as UIView in self.view.subviews {
         if ((acceptButton == nil) || (declineButton == nil) || (unlockButton == nil)) {
-        for view in view.subviews as [UIView] {
-            if let button = view as? UIButton {
-                NSLog("found button")
-                NSLog(button.restorationIdentifier!)
-                if (button.restorationIdentifier! == "decline") {
-                    declineButton = button
-                    declineButton!.removeTarget(self, action: #selector(hangUp), for: UIControl.Event.touchUpInside)
-                    declineButton!.addTarget(self, action: #selector(hangUp), for: UIControl.Event.touchUpInside)
-                } else if (button.restorationIdentifier! == "accept") {
-                    acceptButton = button
-                    acceptButton!.removeTarget(self, action: #selector(pickUp), for: UIControl.Event.touchUpInside)
-                    acceptButton!.addTarget(self, action: #selector(pickUp), for: UIControl.Event.touchUpInside)
-                } else if (button.restorationIdentifier! == "unlock") {
-                    unlockButton = button
-                    unlockButton!.removeTarget(self, action: #selector(unlock), for: UIControl.Event.touchUpInside)
-                    unlockButton!.addTarget(self, action: #selector(unlock), for: UIControl.Event.touchUpInside)
+            for view in view.subviews as [UIView] {
+                if let button = view as? UIButton {
+                    if (button.restorationIdentifier! == "decline") {
+                        declineButton = button
+                        declineButton!.removeTarget(self, action: #selector(hangUp), for: UIControl.Event.touchUpInside)
+                        declineButton!.addTarget(self, action: #selector(hangUp), for: UIControl.Event.touchUpInside)
+                    } else if (button.restorationIdentifier! == "accept") {
+                        acceptButton = button
+                        acceptButton!.removeTarget(self, action: #selector(pickUp), for: UIControl.Event.touchUpInside)
+                        acceptButton!.addTarget(self, action: #selector(pickUp), for: UIControl.Event.touchUpInside)
+                    } else if (button.restorationIdentifier! == "unlock") {
+                        unlockButton = button
+                        unlockButton!.removeTarget(self, action: #selector(unlock), for: UIControl.Event.touchUpInside)
+                        unlockButton!.addTarget(self, action: #selector(unlock), for: UIControl.Event.touchUpInside)
+                    }
                 }
             }
-        }            //button.setTitleForAllStates("")
-        NSLog("end of searching for buttons");
-        } else {
-            NSLog("Buttons already found");
         }
     }
 
