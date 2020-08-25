@@ -16,7 +16,10 @@ class CallViewController: UIViewController {
     var lc: Core?
     var acceptButton: UIButton? = nil
     var declineButton: UIButton? = nil
-    var unlockButton: UIButton? = nil
+    @objc public var unlockButton: UIButton? = nil
+    @objc public var addressLabel: UILabel? = nil
+    @objc public var displayNameLabel: UILabel? = nil
+    @objc public var doorOpenURL: String? = nil
 
     @objc public func setCore(core: OpaquePointer) {
         lc = Core.getSwiftObject(cObject: core)
@@ -26,6 +29,7 @@ class CallViewController: UIViewController {
     @objc public func resetButtons() {
         acceptButton?.isEnabled = true
         declineButton?.isEnabled = true
+        unlockButton?.isEnabled = false
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -85,7 +89,62 @@ class CallViewController: UIViewController {
         }
         NSLog("pick up")
     }
+
+    func showToast(message : String, backgroundColor: UIColor) {
+
+        let toastLabel = UILabel(frame: CGRect(x: self.view.frame.size.width/2 - 75, y: self.view.frame.size.height-100, width: 150, height: 35))
+        toastLabel.backgroundColor = backgroundColor
+        toastLabel.textColor = UIColor.white
+        toastLabel.font = .systemFont(ofSize: 12.0)
+        toastLabel.textAlignment = .center;
+        toastLabel.text = message
+        toastLabel.alpha = 1.0
+        toastLabel.layer.cornerRadius = 10;
+        toastLabel.clipsToBounds  =  true
+        self.view.addSubview(toastLabel)
+        UIView.animate(withDuration: 4.0, delay: 0.1, options: .curveEaseOut, animations: {
+             toastLabel.alpha = 0.0
+        }, completion: {(isCompleted) in
+            toastLabel.removeFromSuperview()
+        })
+    }
+
+    func show_toast(opened: Bool) {
+        var status: String = "Ошибка"
+        var color: UIColor = UIColor.red.withAlphaComponent(0.6)
+        if (opened) {
+            status = "Дверь открыта"
+            color = UIColor.green.withAlphaComponent(0.6)
+        }
+        self.showToast(message: status, backgroundColor: color)
+    }
+
     @objc public func unlock() {
+        if (self.doorOpenURL != nil) {
+            let url = URL(string: self.doorOpenURL!)!
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            NSURLConnection.sendAsynchronousRequest(request, queue: OperationQueue.main) {(response, data, error) in
+                let httpResponse = response as! HTTPURLResponse
+                if (httpResponse.statusCode == 200) {
+                    guard let data = data else { return }
+                    do{
+                         //here dataResponse received from a network request
+                         let jsonResponse = try JSONSerialization.jsonObject(with:
+                            data, options: []) as! [String : Any]
+                         //print(jsonResponse) //Response result
+                        if ((jsonResponse["status"]) != nil) {
+                            self.show_toast(opened: true)
+                        }
+                      } catch let parsingError {
+                         print("Error", parsingError)
+                        self.show_toast(opened: false)
+                    }
+                } else {
+                    self.show_toast(opened: false)
+                }
+            }
+        }   
         NSLog("unlock")
     }
 
@@ -106,6 +165,13 @@ class CallViewController: UIViewController {
                         unlockButton = button
                         unlockButton!.removeTarget(self, action: #selector(unlock), for: UIControl.Event.touchUpInside)
                         unlockButton!.addTarget(self, action: #selector(unlock), for: UIControl.Event.touchUpInside)
+                    }
+                }
+                if let label = view as? UILabel {
+                    if (label.restorationIdentifier! == "address") {
+                        addressLabel = label
+                    } else if (label.restorationIdentifier! == "displayName") {
+                        displayNameLabel = label
                     }
                 }
             }

@@ -83,6 +83,42 @@ static CallViewController *callViewController;
         NSLog(@"presenting call dialog");
         [self.viewController presentViewController: callViewController animated:YES completion:^{
             NSLog(@"incall window opened");
+            callViewController.addressLabel.text = @"";
+            callViewController.displayNameLabel.text = @"";
+            callViewController.doorOpenURL = @"";
+            LinphoneAddress *address = linphone_call_get_remote_address(self->call);
+            const char *username = linphone_address_get_username(address);
+            NSString* contacts = [[NSUserDefaults standardUserDefaults] stringForKey:@"contacts"];
+            if (contacts && NSClassFromString(@"NSJSONSerialization"))
+            {
+                NSData* data = [contacts dataUsingEncoding:NSUTF8StringEncoding];
+                NSError *error = nil;
+                id object = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+                if (!error && [object isKindOfClass:[NSArray class]]) {
+                    for(NSDictionary *contact in object) {
+                        NSString *sip_name = [contact objectForKey:@"sip_name"];
+                        NSString *door_open_url = [contact objectForKey:@"door_open_url"];
+                        if (sip_name && door_open_url && [sip_name isEqualToString:[NSString stringWithUTF8String:username]]) {
+                            callViewController.unlockButton.enabled = true;
+                            NSString *addressLine = [contact objectForKey:@"address"];
+                            NSString *entrance = [contact objectForKey:@"entrance"];
+                            callViewController.doorOpenURL = door_open_url;
+                            if (addressLine) {
+                                callViewController.addressLabel.text = addressLine;
+                            } else {
+                                const char *address_as_string = linphone_address_as_string_uri_only(address);
+                                callViewController.addressLabel.text = @(address_as_string);
+                            }
+                            if (entrance) {
+                                callViewController.displayNameLabel.text = [NSString stringWithFormat: @"Подъезд №%@", entrance];
+                            } else {
+                                callViewController.displayNameLabel.text = @(username);
+                            }
+                        }
+                    }
+                }
+            }
+
             if (linphone_call_get_dir(self->call) == LinphoneCallIncoming) {
                 dispatch_async(dispatch_get_main_queue(), ^{
                     LinphoneCallParams *lcallParams = linphone_core_create_call_params(self->lc, self->call);
