@@ -129,13 +129,13 @@ class CallViewController: UIViewController {
                 if (httpResponse.statusCode == 200) {
                     guard let data = data else { return }
                     do{
-                         //here dataResponse received from a network request
-                         let jsonResponse = try JSONSerialization.jsonObject(with:
+                        let jsonResponse = try JSONSerialization.jsonObject(with:
                             data, options: []) as! [String : Any]
-                         //print(jsonResponse) //Response result
-                        if ((jsonResponse["status"]) != nil) {
-                            self.show_toast(opened: true)
+                        guard let status = jsonResponse["status"] as? Bool else {
+                            self.show_toast(opened: false)
+                            return
                         }
+                        self.show_toast(opened: status)
                       } catch let parsingError {
                          print("Error", parsingError)
                         self.show_toast(opened: false)
