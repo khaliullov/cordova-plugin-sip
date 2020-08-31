@@ -13,7 +13,8 @@ NSString *callCallBackID ;
 static bool_t isspeaker=FALSE;
 static Linphone *theLinhone;
 static UIView *remoteView;
-static CallViewController *callViewController;
+static UINavigationController *callViewController;
+static CallViewController *subCallViewController;
 
 - (void)acceptCall:(CDVInvokedUrlCommand*)command {
     NSLog(@"accept call");
@@ -47,10 +48,30 @@ static CallViewController *callViewController;
     return topController;
 }
 
+#define UIColorFromRGB(rgbValue) \
+[UIColor colorWithRed:((float)((rgbValue & 0xFF0000) >> 16))/255.0 \
+                green:((float)((rgbValue & 0x00FF00) >>  8))/255.0 \
+                 blue:((float)((rgbValue & 0x0000FF) >>  0))/255.0 \
+                alpha:1.0]
+
+- (void)hideCallView {
+     if (callViewController) {
+         UIViewController *topMostController = [self topMostController];
+         if (callViewController.isBeingPresented || topMostController == callViewController) {
+             [[self viewController] dismissViewControllerAnimated:false completion:nil];
+         }
+     }
+}
+
 - (void)showCallView {
     if (!callViewController) {
         UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Linphone" bundle:nil];
-       callViewController = [storyboard instantiateViewControllerWithIdentifier:@"CallViewController"];
+        subCallViewController = [storyboard instantiateViewControllerWithIdentifier:@"CallViewController"];
+        callViewController = [[UINavigationController alloc]initWithRootViewController:subCallViewController] ;
+        callViewController.navigationBar.barTintColor = UIColorFromRGB(0x6D3AF7);
+        callViewController.navigationBar.translucent = NO;
+        //callViewController.topViewController.title = @"Домофон";
+        callViewController.modalPresentationStyle = UIModalPresentationFullScreen;
         lc = LinphoneManager.getLc;
         //sipViewController.setCore(lc);
     }
@@ -82,9 +103,9 @@ static CallViewController *callViewController;
         NSLog(@"presenting call dialog");
         [self.viewController presentViewController: callViewController animated:YES completion:^{
             NSLog(@"incall window opened");
-            callViewController.addressLabel.text = @"";
-            callViewController.displayNameLabel.text = @"";
-            callViewController.doorOpenURL = @"";
+            subCallViewController.addressLabel.text = @"";
+            subCallViewController.displayNameLabel.text = @"";
+            subCallViewController.doorOpenURL = @"";
             LinphoneAddress *address = linphone_call_get_remote_address(self->call);
             const char *username = linphone_address_get_username(address);
             NSString* contacts = [[NSUserDefaults standardUserDefaults] stringForKey:@"contacts"];
@@ -98,20 +119,20 @@ static CallViewController *callViewController;
                         NSString *sip_name = [contact objectForKey:@"sip_name"];
                         NSString *door_open_url = [contact objectForKey:@"door_open_url"];
                         if (sip_name && door_open_url && [sip_name isEqualToString:[NSString stringWithUTF8String:username]]) {
-                            callViewController.unlockButton.enabled = true;
+                            subCallViewController.unlockButton.enabled = true;
                             NSString *addressLine = [contact objectForKey:@"address"];
                             NSString *entrance = [contact objectForKey:@"entrance"];
-                            callViewController.doorOpenURL = door_open_url;
+                            subCallViewController.doorOpenURL = door_open_url;
                             if (addressLine) {
-                                callViewController.addressLabel.text = addressLine;
+                                subCallViewController.addressLabel.text = addressLine;
                             } else {
                                 const char *address_as_string = linphone_address_as_string_uri_only(address);
-                                callViewController.addressLabel.text = @(address_as_string);
+                                subCallViewController.addressLabel.text = @(address_as_string);
                             }
                             if (entrance) {
-                                callViewController.displayNameLabel.text = [NSString stringWithFormat: @"Подъезд №%@", entrance];
+                                subCallViewController.displayNameLabel.text = [NSString stringWithFormat: @"Подъезд №%@", entrance];
                             } else {
-                                callViewController.displayNameLabel.text = @(username);
+                                subCallViewController.displayNameLabel.text = @(username);
                             }
                         }
                     }
@@ -138,8 +159,8 @@ static CallViewController *callViewController;
         remoteView = [[UIView alloc] initWithFrame:CGRectMake(0,0,320,240)];
         remoteView.backgroundColor = [UIColor blackColor];
         remoteView.restorationIdentifier = @"remoteView";
-        [callViewController.view addSubview:remoteView];
-        callViewController.remoteVideoView = remoteView;
+        [subCallViewController.view addSubview:remoteView];
+        subCallViewController.remoteVideoView = remoteView;
         linphone_core_set_native_video_window_id(lc, (__bridge void *)remoteView);
         NSLog(@"remote view added");
     }

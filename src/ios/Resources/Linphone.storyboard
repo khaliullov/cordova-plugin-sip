@@ -21,7 +21,7 @@
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <accessibility key="accessibilityConfiguration" hint="decline" identifier="decline" label="decline"/>
                                 <inset key="titleEdgeInsets" minX="0.0" minY="84" maxX="64" maxY="0.0"/>
-                                <state key="normal" image="hangup.png">
+                                <state key="normal" image="reject">
                                     <attributedString key="attributedTitle">
                                         <fragment content="отклонить">
                                             <attributes>
@@ -38,7 +38,7 @@
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <accessibility key="accessibilityConfiguration" hint="accept" identifier="decline" label="accept"/>
                                 <inset key="titleEdgeInsets" minX="0.0" minY="84" maxX="64" maxY="0.0"/>
-                                <state key="normal" image="pickup.png">
+                                <state key="normal" image="answer">
                                     <attributedString key="attributedTitle">
                                         <fragment content="принять">
                                             <attributes>
@@ -55,7 +55,7 @@
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <accessibility key="accessibilityConfiguration" hint="unlock" identifier="unlock" label="unlock"/>
                                 <inset key="titleEdgeInsets" minX="0.0" minY="84" maxX="64" maxY="0.0"/>
-                                <state key="normal" image="unlock.png">
+                                <state key="normal" image="open">
                                     <attributedString key="attributedTitle">
                                         <fragment content="открыть">
                                             <attributes>
@@ -118,9 +118,10 @@ Cg
             <point key="canvasLocation" x="137.68115942028987" y="109.82142857142857"/>
         </scene>
     </scenes>
+    <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
     <resources>
-        <image name="hangup.png" width="512" height="512"/>
-        <image name="pickup.png" width="512" height="512"/>
-        <image name="unlock.png" width="506" height="512"/>
+        <image name="answer" width="50" height="50"/>
+        <image name="open" width="50" height="50"/>
+        <image name="reject" width="50" height="50"/>
     </resources>
 </document>
