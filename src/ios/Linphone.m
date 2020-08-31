@@ -24,12 +24,11 @@ static CallViewController *callViewController;
             return;
         }
 
-        linphone_call_params_enable_video(lcallParams, TRUE);
-    linphone_call_params_enable_audio(lcallParams, FALSE);
+    linphone_call_params_enable_video(lcallParams, TRUE);
+    linphone_call_params_enable_audio(lcallParams, TRUE);
 
     //[self.commandDelegate runInBackground:^{
         linphone_core_accept_call_with_params(lc, call, lcallParams);
-        //linphone_core_accept_early_media_with_params(lc, call, lcallParams);
         linphone_call_params_destroy(lcallParams);
     //}];
     
@@ -123,7 +122,6 @@ static CallViewController *callViewController;
                 dispatch_async(dispatch_get_main_queue(), ^{
                     LinphoneCallParams *lcallParams = linphone_core_create_call_params(self->lc, self->call);
                     if (lcallParams) {
-                        //return;
                         linphone_call_params_enable_audio(lcallParams, FALSE);
                         linphone_call_params_enable_video(lcallParams, TRUE);
                         //linphone_call_params_set_video_direction(lcallParams, LinphoneMediaDirectionRecvOnly);
@@ -138,8 +136,10 @@ static CallViewController *callViewController;
     }
     if (!remoteView) {
         remoteView = [[UIView alloc] initWithFrame:CGRectMake(0,0,320,240)];
-        remoteView.backgroundColor=[UIColor blackColor];
+        remoteView.backgroundColor = [UIColor blackColor];
+        remoteView.restorationIdentifier = @"remoteView";
         [callViewController.view addSubview:remoteView];
+        callViewController.remoteVideoView = remoteView;
         linphone_core_set_native_video_window_id(lc, (__bridge void *)remoteView);
         NSLog(@"remote view added");
     }
@@ -150,10 +150,21 @@ static CallViewController *callViewController;
     NSLog(@"onCallStateChanged");
     LinphoneCallState state = [[dict objectForKey:@"state"] intValue];
     CDVPluginResult* pluginResult = nil;
+    LinphoneManager* linphoneManager = [LinphoneManager instance];
+    if (state == LinphoneCallEnd || state == LinphoneCallError) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [linphoneManager setSpeakerEnabled:FALSE];
+        });
+    }
     if (state == LinphoneCallError) {
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Error"];
         linphone_call_unref(call);
         call = NULL;
+    }
+    else if (state == LinphoneCallStateStreamsRunning) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [linphoneManager setSpeakerEnabled:TRUE];
+        });
     }
     else if (state == LinphoneCallConnected) {
         //pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Connected"];

@@ -45,6 +45,49 @@ class CallViewController: UIViewController {
         }
     }
 
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        let bounds: CGRect = self.view.bounds;
+        NSLog("aligning remote view")
+
+        var remoteViewFrame: CGRect = self.remoteVideoView.frame
+        if (bounds.height > bounds.width) { // vertical
+            let maxWidth: Int = Int(bounds.width - 20)
+            let maxHeight: Int = Int((bounds.height - 40) / 2 - 40)
+            var calculatedHeight: Int = Int(4 * maxWidth / 3)
+            var calculatedWidth: Int = Int(3 * maxHeight / 4)
+            if calculatedWidth > maxWidth {
+                calculatedWidth = maxWidth
+                calculatedHeight = Int(3 * maxWidth / 4)
+            } else {
+                calculatedHeight = maxHeight
+                calculatedWidth = Int(4 * maxHeight / 3)
+            }
+            remoteViewFrame.size.height = CGFloat(calculatedHeight)
+            remoteViewFrame.size.width = CGFloat(calculatedWidth)
+            self.remoteVideoView.frame = remoteViewFrame
+            self.remoteVideoView.center = CGPoint(x: (bounds.width) / 2, y: (bounds.height - 60) / 4 + 60)
+            self.addressLabel?.center = CGPoint(x: (bounds.width) / 2, y: (bounds.height - remoteViewFrame.size.height - 40) / 2 + remoteViewFrame.size.height - 20)
+            self.displayNameLabel?.center = CGPoint(x: (bounds.width) / 2, y: (bounds.height - remoteViewFrame.size.height - 40) / 2 + remoteViewFrame.size.height + 20)
+            let offset: CGFloat = bounds.width / 3
+            self.declineButton?.center = CGPoint(x: (bounds.width) / 2 - offset, y: bounds.height - offset)
+            self.unlockButton?.center = CGPoint(x: (bounds.width) / 2, y: bounds.height - offset)
+            self.acceptButton?.center = CGPoint(x: (bounds.width) / 2 + offset, y: bounds.height - offset)
+        } else { // horizontal
+            remoteViewFrame.size.height = bounds.height - 100
+            remoteViewFrame.size.width = 4 * remoteViewFrame.size.height / 3
+            self.remoteVideoView.frame = remoteViewFrame
+            self.remoteVideoView.center = CGPoint(x: 10 + self.remoteVideoView.frame.width / 2, y: 40 + self.remoteVideoView.frame.height / 2)
+            
+            self.addressLabel?.center = CGPoint(x: 10 + self.remoteVideoView.frame.width / 2, y: bounds.height - 40)
+            self.displayNameLabel?.center = CGPoint(x: 10 + self.remoteVideoView.frame.width / 2, y: bounds.height - 20)
+            let offset: CGFloat = (bounds.height - 40) / 3
+            self.declineButton?.center = CGPoint(x: 5 * bounds.width / 6, y: (bounds.height - 40) / 2 + offset + 20)
+            self.unlockButton?.center = CGPoint(x: 5 * bounds.width / 6, y: (bounds.height - 40) / 2 + 20)
+            self.acceptButton?.center = CGPoint(x: 5 * bounds.width / 6, y: (bounds.height - 40) / 2 - offset + 20)
+        }
+    }
+
     @objc public func hangUp() {
         var cObject = LinphoneManager.getLc()
         lc = Core.getSwiftObject(cObject: cObject!)
@@ -64,9 +107,6 @@ class CallViewController: UIViewController {
         lc = Core.getSwiftObject(cObject: cObject!)
         let call: Call? = self.lc?.currentCall
         if (call != nil) {
-            // preview Call
-            
-            
             // accept Call
             var callParams: CallParams? = call?.params
             callParams?.audioDirection = .SendRecv
@@ -79,12 +119,6 @@ class CallViewController: UIViewController {
             } catch {
                 NSLog("Fuck \(error)")
             }
-            //NSLog("updating..")
-            //try? call?.acceptUpdate(params: callParams!)
-            NSLog("params..")
-            call?.params = callParams
-            //isAnswered = true
-            //NSLog("button..")
             acceptButton?.isEnabled = false
         }
         NSLog("pick up")
@@ -148,7 +182,7 @@ class CallViewController: UIViewController {
         NSLog("unlock")
     }
 
-    func initButtons() {
+    func initControls() {
         //for case let subview as UIView in self.view.subviews {
         if ((acceptButton == nil) || (declineButton == nil) || (unlockButton == nil)) {
             for view in view.subviews as [UIView] {
@@ -180,7 +214,7 @@ class CallViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.initButtons()
+        self.initControls()
         return;
     }
 }

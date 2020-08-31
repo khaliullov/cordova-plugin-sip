@@ -74,6 +74,7 @@ typedef struct _LinphoneManagerSounds {
 - (BOOL)popPushCallID:(NSString*) callId;  // +
 - (void)acceptCallForCallId:(NSString*)callid;  // +
 - (void)refreshRegisters;  //+
+- (bool)allowSpeaker;
 
 + (BOOL)copyFile:(NSString*)src destination:(NSString*)dst override:(BOOL)override ignore:(BOOL)ignore;
 + (NSString*)bundleFile:(NSString*)file;
@@ -108,7 +109,9 @@ typedef struct _LinphoneManagerSounds {
 @property (readonly) sqlite3* database;
 @property(nonatomic, strong) NSData *remoteNotificationToken;
 @property (readonly) LinphoneManagerSounds sounds;
+@property (nonatomic, assign) BOOL speakerEnabled;
 @property (nonatomic, assign) BOOL bluetoothAvailable;
+@property (nonatomic, assign) BOOL bluetoothEnabled;
 @property (copy) void (^silentPushCompletion)(UIBackgroundFetchResult);
 @property (readonly) LpConfig *configDb;
 @property BOOL conf;

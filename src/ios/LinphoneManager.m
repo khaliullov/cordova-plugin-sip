@@ -25,6 +25,7 @@
 #include "linphone/factory.h"
 #include "linphone/linphonecore_utils.h"
 
+#import "AudioHelper.h"
 #include "LinphoneManager.h"
 #include "Log.h"
 #include "Utils.h"
@@ -40,6 +41,7 @@ NSString *const LINPHONERC_APPLICATION_KEY = @"app";
 NSString *const kLinphoneCoreUpdate = @"LinphoneCoreUpdate";
 NSString *const kLinphoneCallUpdate = @"LinphoneCallUpdate";
 NSString *const kLinphoneRegistrationUpdate = @"LinphoneRegistrationUpdate";
+NSString *const kLinphoneBluetoothAvailabilityUpdate = @"LinphoneBluetoothAvailabilityUpdate";
 NSString *const kLinphoneGlobalStateUpdate = @"LinphoneGlobalStateUpdate";
 NSString *const kLinphoneConfiguringStateUpdate = @"LinphoneConfiguringStateUpdate";
 
@@ -77,11 +79,14 @@ extern void libmscodec2_init(MSFactory *factory);
 
 - (id)init {
     if ((self = [super init])) {
+        [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(audioRouteChangeListenerCallback:) name:AVAudioSessionRouteChangeNotification object:nil];
 
         _sounds.vibrate = kSystemSoundID_Vibrate;
 
         _pushDict = [[NSMutableDictionary alloc] init];
         _database = NULL;
+        _speakerEnabled                = FALSE;
+        _bluetoothEnabled              = FALSE;
         _conf = FALSE;
         pushCallIDs = [[NSMutableArray alloc] init];
         [self renameDefaultSettings];
@@ -700,6 +705,104 @@ static int comp_call_state_paused(const LinphoneCall *call, const void *param) {
     _configDb = lp_config_new_with_factory([confiFileName UTF8String], [factory UTF8String]);
     //_configDb = linphone_config_new_for_shared_core(kLinphoneMsgNotificationAppGroupId.UTF8String, @"linphonerc".UTF8String, factory.UTF8String);
     lp_config_clean_entry(_configDb, "misc", "max_calls");
+}
+
+#pragma mark - Audio route Functions
+
+- (bool)allowSpeaker {
+    if (IPAD) return true;
+    
+    bool allow                               = true;
+    AVAudioSessionRouteDescription *newRoute = [AVAudioSession sharedInstance].currentRoute;
+    if (newRoute) {
+        NSString *route = newRoute.outputs[0].portType;
+        allow           = !([route isEqualToString:AVAudioSessionPortLineOut] ||
+                            [route isEqualToString:AVAudioSessionPortHeadphones] ||
+                            [[AudioHelper bluetoothRoutes] containsObject:route]);
+    }
+    return allow;
+}
+
+- (void)audioRouteChangeListenerCallback:(NSNotification *)notif {
+    if (IPAD) return;
+    
+    // there is at least one bug when you disconnect an audio bluetooth headset
+    // since we only get notification of route having changed, we cannot tell if that is due to:
+    // -bluetooth headset disconnected or
+    // -user wanted to use earpiece
+    // the only thing we can assume is that when we lost a device, it must be a bluetooth one
+    // (strong hypothesis though)
+    if ([[notif.userInfo valueForKey:AVAudioSessionRouteChangeReasonKey] integerValue] ==
+        AVAudioSessionRouteChangeReasonOldDeviceUnavailable) {
+        _bluetoothAvailable = NO;
+    }
+    AVAudioSessionRouteDescription *newRoute = [AVAudioSession sharedInstance].currentRoute;
+    
+    if (newRoute) {
+        if (newRoute.outputs.count == 0) { return; }
+        NSString *route = [newRoute.outputs objectAtIndex:0].portType;
+        LOGI(@"Current audio route is [%s]", [route UTF8String]);
+        
+        _speakerEnabled = [route isEqualToString:AVAudioSessionPortBuiltInSpeaker];
+        if (([[AudioHelper bluetoothRoutes] containsObject:route]) && !_speakerEnabled) {
+            _bluetoothAvailable = TRUE;
+            _bluetoothEnabled   = TRUE;
+        } else {
+            _bluetoothEnabled = FALSE;
+        }
+        NSDictionary *dict = [NSDictionary
+                              dictionaryWithObjectsAndKeys:[NSNumber numberWithBool:_bluetoothAvailable],
+                              @"available", nil];
+        [NSNotificationCenter.defaultCenter
+         postNotificationName:kLinphoneBluetoothAvailabilityUpdate
+         object:self
+         userInfo:dict];
+    }
+}
+
+- (void)setSpeakerEnabled:(BOOL)enable {
+    _speakerEnabled = enable;
+    NSError *err    = nil;
+    
+    if (enable && [self allowSpeaker]) {
+        [[AVAudioSession sharedInstance] overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker
+                                                           error:&err];
+        [[UIDevice currentDevice] setProximityMonitoringEnabled:FALSE];
+        _bluetoothEnabled = FALSE;
+    } else {
+        AVAudioSessionPortDescription *builtinPort = [AudioHelper builtinAudioDevice];
+        [[AVAudioSession sharedInstance] setPreferredInput:builtinPort error:&err];
+        [[UIDevice currentDevice]
+         setProximityMonitoringEnabled:(linphone_core_get_calls_nb(LC) > 0)];
+    }
+    
+    if (err) {
+        LOGE(@"Failed to change audio route: err %@", err.localizedDescription);
+        err = nil;
+    }
+}
+
+- (void)setBluetoothEnabled:(BOOL)enable {
+    if (_bluetoothAvailable) {
+        // The change of route will be done in setSpeakerEnabled
+        _bluetoothEnabled = enable;
+        if (_bluetoothEnabled) {
+            NSError *err                                  = nil;
+            AVAudioSessionPortDescription *_bluetoothPort = [AudioHelper bluetoothAudioDevice];
+            [[AVAudioSession sharedInstance] setPreferredInput:_bluetoothPort error:&err];
+            // if setting bluetooth failed, it must be because the device is not available
+            // anymore (disconnected), so deactivate bluetooth.
+            if (err) {
+                _bluetoothEnabled = FALSE;
+                LOGE(@"Failed to enable bluetooth: err %@", err.localizedDescription);
+                err = nil;
+            } else {
+                _speakerEnabled = FALSE;
+                return;
+            }
+        }
+    }
+    [self setSpeakerEnabled:_speakerEnabled];
 }
 
 #pragma mark - Property Functions

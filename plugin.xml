@@ -126,6 +126,8 @@
     <resource-file src="src/android/res/raw/oldphone_mono.wav"/>
     <header-file src="src/ios/AppDelegate+linphone.h"/>
     <source-file src="src/ios/AppDelegate+linphone.m"/>
+    <header-file src="src/ios/AudioHelper.h"/>
+    <source-file src="src/ios/AudioHelper.m"/>
     <source-file src="src/ios/CallViewController.swift"/>
     <source-file src="src/ios/CoreManager.swift"/>
     <header-file src="src/ios/Linphone.h"/>
@@ -136,14 +138,12 @@
     <source-file src="src/ios/Log.m"/>
     <header-file src="src/ios/Utils.h"/>
     <source-file src="src/ios/Utils.m"/>
+    <resource-file src="src/ios/Resources/LinphoneAssets.xcassets" />
     <resource-file src="src/ios/Resources/Linphone.storyboard"/>
-    <resource-file src="src/ios/Resources/hangup.png"/>
     <resource-file src="src/ios/Resources/linphonerc"/>
     <resource-file src="src/ios/Resources/linphonerc-factory"/>
     <resource-file src="src/ios/Resources/linphonerc~ipad"/>
     <resource-file src="src/ios/Resources/nowebcamCIF.jpg"/>
-    <resource-file src="src/ios/Resources/pickup.png"/>
-    <resource-file src="src/ios/Resources/unlock.png"/>
     <resource-file src="src/ios/Resources/sounds/hold.mkv"/>
     <resource-file src="src/ios/Resources/sounds/ringtones/notes_of_the_optimistic.caf"/>
     <podspec>
