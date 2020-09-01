@@ -10,7 +10,8 @@
 @synthesize lc;
 NSString *loginCallBackID ;
 NSString *callCallBackID ;
-static bool_t isspeaker=FALSE;
+static bool_t isspeaker = FALSE;
+static bool_t beingPresented = FALSE;
 static Linphone *theLinhone;
 static UIView *remoteView;
 static UINavigationController *callViewController;
@@ -19,19 +20,10 @@ static CallViewController *subCallViewController;
 
 - (void)pluginInitialize;
 {
-    NSLog(@"linphone pluginInitialize");
     [super pluginInitialize];
-    [NSNotificationCenter.defaultCenter addObserver:self
-     selector:@selector(onCallStateChanged:)
-     name:@"LinphoneCallUpdate"
-     object:nil];
 }
 
 -(void)dealloc {
-    NSLog(@"linphone dealloc");
-    [NSNotificationCenter.defaultCenter removeObserver:self
-     name:@"LinphoneCallUpdate"
-     object:nil];
 }
 
 - (void)acceptCall:(CDVInvokedUrlCommand*)command {
@@ -82,8 +74,15 @@ static CallViewController *subCallViewController;
 }
 
 - (void)presentCallView {
+    //[self.viewController.navigationController pushViewController:callViewController animated:TRUE];
+    if (beingPresented) {
+        NSLog(@"linphone dialog already being presented");
+        return;
+    }
+    beingPresented = TRUE;
     [self.viewController presentViewController: callViewController animated:YES completion:^{
         NSLog(@"incall window opened");
+        beingPresented = FALSE;
         subCallViewController.addressLabel.text = @"";
         subCallViewController.displayNameLabel.text = @"";
         subCallViewController.doorOpenURL = @"";
@@ -200,6 +199,7 @@ static CallViewController *subCallViewController;
     if (state == LinphoneCallEnd || state == LinphoneCallError) {
         dispatch_async(dispatch_get_main_queue(), ^{
             [linphoneManager setSpeakerEnabled:FALSE];
+            isspeaker = FALSE;
         });
     }
     if (state == LinphoneCallError) {
@@ -210,6 +210,7 @@ static CallViewController *subCallViewController;
     else if (state == LinphoneCallStateStreamsRunning) {
         dispatch_async(dispatch_get_main_queue(), ^{
             [linphoneManager setSpeakerEnabled:TRUE];
+            isspeaker = TRUE;
         });
     }
     else if (state == LinphoneCallConnected) {
@@ -224,7 +225,7 @@ static CallViewController *subCallViewController;
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Incoming"];
         self.showCallView;
     }
-    if (pluginResult) {
+    if (pluginResult && callCallBackID) {
         [theLinhone.commandDelegate sendPluginResult:pluginResult callbackId:callCallBackID];
     }
 }

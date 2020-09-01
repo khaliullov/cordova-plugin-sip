@@ -256,6 +256,8 @@ BOOL linphoneSwapped;
     linphoneFromPush = FALSE;
     [self initPushNotifications];
     NSLog(@"initLinphoneCore");
+    Linphone *linphone = [self getCommandInstance:@"Linphone"];
+    [NSNotificationCenter.defaultCenter addObserver:linphone selector:@selector(onCallStateChanged:) name:@"LinphoneCallUpdate" object:nil];
     [[LinphoneManager instance] launchLinphoneCore];
     //[[LinphoneManager instance] initLinphoneCore];
     //[[LinphoneManager instance] setFirewallPolicy:@"PolicyNoFirewall"];
@@ -267,6 +269,8 @@ BOOL linphoneSwapped;
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidBecomeActiveNotification object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidEnterBackgroundNotification object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidFinishLaunchingNotification object:nil];
+    Linphone *linphone = [self getCommandInstance:@"Linphone"];
+    [NSNotificationCenter.defaultCenter removeObserver:linphone name:@"LinphoneCallUpdate" object:nil];
 
     [[LinphoneManager instance] destroyLinphoneCore];
 }
