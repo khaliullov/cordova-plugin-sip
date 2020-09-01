@@ -16,6 +16,24 @@ static UIView *remoteView;
 static UINavigationController *callViewController;
 static CallViewController *subCallViewController;
 
+
+- (void)pluginInitialize;
+{
+    NSLog(@"linphone pluginInitialize");
+    [super pluginInitialize];
+    [NSNotificationCenter.defaultCenter addObserver:self
+     selector:@selector(onCallStateChanged:)
+     name:@"LinphoneCallUpdate"
+     object:nil];
+}
+
+-(void)dealloc {
+    NSLog(@"linphone dealloc");
+    [NSNotificationCenter.defaultCenter removeObserver:self
+     name:@"LinphoneCallUpdate"
+     object:nil];
+}
+
 - (void)acceptCall:(CDVInvokedUrlCommand*)command {
     NSLog(@"accept call");
     lc = LinphoneManager.getLc;
@@ -207,13 +225,6 @@ static CallViewController *subCallViewController;
 - (void)listenCall:(CDVInvokedUrlCommand*)command {
     theLinhone = self;
     callCallBackID = command.callbackId;
-    [NSNotificationCenter.defaultCenter removeObserver:self
-     name:@"LinphoneCallUpdate"
-     object:nil];
-    [NSNotificationCenter.defaultCenter addObserver:self
-     selector:@selector(onCallStateChanged:)
-     name:@"LinphoneCallUpdate"
-     object:nil];
     NSLog(@"Listen call");
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Idle"];
     [pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
