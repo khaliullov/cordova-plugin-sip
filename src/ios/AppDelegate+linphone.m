@@ -74,15 +74,28 @@ BOOL linphoneSwapped;
     return [self linphone_swizzled_init];
 }
 
+- (void)clearNotifications {
+    [[UNUserNotificationCenter currentNotificationCenter] getDeliveredNotificationsWithCompletionHandler:^(NSArray<UNNotification *> * _Nonnull notifications) {
+        NSMutableArray <NSString *> *identifiersToRemove = [@[] mutableCopy];
+        for (UNNotification *notification in notifications) {
+            if ([notification.request.content.categoryIdentifier isEqualToString:@"incoming_call"]) {
+                [identifiersToRemove addObject:notification.request.identifier];
+            }
+        }
+        [[UNUserNotificationCenter currentNotificationCenter] removeDeliveredNotificationsWithIdentifiers:identifiersToRemove];
+    }];
+}
+
 - (void)linphoneOnApplicationDidBecomeActive:(NSNotification *)notification
 {
     NSLog(@"linphone onApplicationDidBecomeActive");
     [[LinphoneManager instance] becomeActive];
-    NSLog(@"Entered foreground");
+    NSLog(@"linphone Entered foreground");
+    [self clearNotifications];
     if (linphoneFromPush) {
         linphoneFromPush = FALSE;
         [self showIncomingDialog];
-        NSLog(@"opened from push notification");
+        NSLog(@"linphone opened from push notification");
     }
 }
 

@@ -144,6 +144,7 @@
     <resource-file src="src/ios/Resources/linphonerc-factory"/>
     <resource-file src="src/ios/Resources/linphonerc~ipad"/>
     <resource-file src="src/ios/Resources/nowebcamCIF.jpg"/>
+    <resource-file src="src/ios/Resources/Opening.caf"/>
     <resource-file src="src/ios/Resources/sounds/hold.mkv"/>
     <resource-file src="src/ios/Resources/sounds/ringtones/notes_of_the_optimistic.caf"/>
     <podspec>

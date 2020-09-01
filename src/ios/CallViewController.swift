@@ -16,6 +16,7 @@ class CallViewController: UIViewController {
     var lc: Core?
     var acceptButton: UIButton? = nil
     var declineButton: UIButton? = nil
+    private var oldIdleTimer: Bool = false
     @objc public var unlockButton: UIButton? = nil
     @objc public var addressLabel: UILabel? = nil
     @objc public var displayNameLabel: UILabel? = nil
@@ -34,11 +35,14 @@ class CallViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        self.oldIdleTimer = UIApplication.shared.isIdleTimerDisabled
+        UIApplication.shared.isIdleTimerDisabled = true
         self.resetButtons()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        UIApplication.shared.isIdleTimerDisabled = self.oldIdleTimer
         NSLog("call dialog hidden");
         if (self.isBeingDismissed) {
             self.hangUp()
@@ -92,11 +96,11 @@ class CallViewController: UIViewController {
         lc = Core.getSwiftObject(cObject: cObject!)
         let call: Call? = self.lc?.currentCall
         if (call != nil) {
-            if (call?.state == .OutgoingProgress || call?.state == .Connected || call?.state == .StreamsRunning) {
-                try? call?.terminate()
-            } else {
-                let reason: Reason = .Declined
+            if (acceptButton!.isEnabled) {
+                let reason: Reason = .NotAnswered
                 try? call?.decline(reason: reason)
+            } else {
+                try? call?.terminate()
             }
         }
         NSLog("hang up")
@@ -214,7 +218,7 @@ class CallViewController: UIViewController {
     @objc func closeCallView() {
         self.dismiss(animated: true, completion: {
             self.hangUp()
-            })
+        })
     }
 
     override func viewDidLoad() {

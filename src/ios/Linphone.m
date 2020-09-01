@@ -81,6 +81,62 @@ static CallViewController *subCallViewController;
      }
 }
 
+- (void)presentCallView {
+    [self.viewController presentViewController: callViewController animated:YES completion:^{
+        NSLog(@"incall window opened");
+        subCallViewController.addressLabel.text = @"";
+        subCallViewController.displayNameLabel.text = @"";
+        subCallViewController.doorOpenURL = @"";
+        LinphoneAddress *address = linphone_call_get_remote_address(self->call);
+        const char *username = linphone_address_get_username(address);
+        NSString* contacts = [[NSUserDefaults standardUserDefaults] stringForKey:@"contacts"];
+        if (contacts && NSClassFromString(@"NSJSONSerialization"))
+        {
+            NSData* data = [contacts dataUsingEncoding:NSUTF8StringEncoding];
+            NSError *error = nil;
+            id object = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+            if (!error && [object isKindOfClass:[NSArray class]]) {
+                for(NSDictionary *contact in object) {
+                    NSString *sip_name = [contact objectForKey:@"sip_name"];
+                    NSString *door_open_url = [contact objectForKey:@"door_open_url"];
+                    if (sip_name && door_open_url && [sip_name isEqualToString:[NSString stringWithUTF8String:username]]) {
+                        subCallViewController.unlockButton.enabled = true;
+                        NSString *addressLine = [contact objectForKey:@"address"];
+                        NSString *entrance = [contact objectForKey:@"entrance"];
+                        subCallViewController.doorOpenURL = door_open_url;
+                        if (addressLine) {
+                            subCallViewController.addressLabel.text = addressLine;
+                        } else {
+                            const char *address_as_string = linphone_address_as_string_uri_only(address);
+                            subCallViewController.addressLabel.text = @(address_as_string);
+                        }
+                        if (entrance) {
+                            subCallViewController.displayNameLabel.text = [NSString stringWithFormat: @"Подъезд №%@", entrance];
+                        } else {
+                            subCallViewController.displayNameLabel.text = @(username);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (linphone_call_get_dir(self->call) == LinphoneCallIncoming) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                LinphoneCallParams *lcallParams = linphone_core_create_call_params(self->lc, self->call);
+                if (lcallParams) {
+                    linphone_call_params_enable_audio(lcallParams, FALSE);
+                    linphone_call_params_enable_video(lcallParams, TRUE);
+                    //linphone_call_params_set_video_direction(lcallParams, LinphoneMediaDirectionRecvOnly);
+                    linphone_call_params_set_audio_direction(lcallParams, LinphoneMediaDirectionInactive);
+                    NSLog(@"accept early media");
+                    linphone_core_accept_early_media_with_params(self->lc, self->call, lcallParams);
+                    linphone_call_params_unref(lcallParams);
+                }
+            });
+        }
+    }];
+}
+
 - (void)showCallView {
     if (!callViewController) {
         UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Linphone" bundle:nil];
@@ -110,69 +166,6 @@ static CallViewController *subCallViewController;
             return;
         }
     }
-    UIViewController *topMostController = [self topMostController];
-    if (callViewController.isBeingPresented || topMostController == callViewController) {
-        NSLog(@"call dialog is already opened");
-    } else {
-        if ([self viewController] != topMostController) {
-            NSLog(@"closing all modal windows");
-            [[self viewController] dismissViewControllerAnimated:false completion:nil];
-        }
-        NSLog(@"presenting call dialog");
-        [self.viewController presentViewController: callViewController animated:YES completion:^{
-            NSLog(@"incall window opened");
-            subCallViewController.addressLabel.text = @"";
-            subCallViewController.displayNameLabel.text = @"";
-            subCallViewController.doorOpenURL = @"";
-            LinphoneAddress *address = linphone_call_get_remote_address(self->call);
-            const char *username = linphone_address_get_username(address);
-            NSString* contacts = [[NSUserDefaults standardUserDefaults] stringForKey:@"contacts"];
-            if (contacts && NSClassFromString(@"NSJSONSerialization"))
-            {
-                NSData* data = [contacts dataUsingEncoding:NSUTF8StringEncoding];
-                NSError *error = nil;
-                id object = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
-                if (!error && [object isKindOfClass:[NSArray class]]) {
-                    for(NSDictionary *contact in object) {
-                        NSString *sip_name = [contact objectForKey:@"sip_name"];
-                        NSString *door_open_url = [contact objectForKey:@"door_open_url"];
-                        if (sip_name && door_open_url && [sip_name isEqualToString:[NSString stringWithUTF8String:username]]) {
-                            subCallViewController.unlockButton.enabled = true;
-                            NSString *addressLine = [contact objectForKey:@"address"];
-                            NSString *entrance = [contact objectForKey:@"entrance"];
-                            subCallViewController.doorOpenURL = door_open_url;
-                            if (addressLine) {
-                                subCallViewController.addressLabel.text = addressLine;
-                            } else {
-                                const char *address_as_string = linphone_address_as_string_uri_only(address);
-                                subCallViewController.addressLabel.text = @(address_as_string);
-                            }
-                            if (entrance) {
-                                subCallViewController.displayNameLabel.text = [NSString stringWithFormat: @"Подъезд №%@", entrance];
-                            } else {
-                                subCallViewController.displayNameLabel.text = @(username);
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (linphone_call_get_dir(self->call) == LinphoneCallIncoming) {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    LinphoneCallParams *lcallParams = linphone_core_create_call_params(self->lc, self->call);
-                    if (lcallParams) {
-                        linphone_call_params_enable_audio(lcallParams, FALSE);
-                        linphone_call_params_enable_video(lcallParams, TRUE);
-                        //linphone_call_params_set_video_direction(lcallParams, LinphoneMediaDirectionRecvOnly);
-                        linphone_call_params_set_audio_direction(lcallParams, LinphoneMediaDirectionInactive);
-                        NSLog(@"accept early media");
-                        linphone_core_accept_early_media_with_params(self->lc, self->call, lcallParams);
-                        linphone_call_params_unref(lcallParams);
-                    }
-                });
-            }
-        }];
-    }
     if (!remoteView) {
         remoteView = [[UIView alloc] initWithFrame:CGRectMake(0,0,320,240)];
         remoteView.backgroundColor = [UIColor blackColor];
@@ -181,6 +174,20 @@ static CallViewController *subCallViewController;
         subCallViewController.remoteVideoView = remoteView;
         linphone_core_set_native_video_window_id(lc, (__bridge void *)remoteView);
         NSLog(@"remote view added");
+    }
+    UIViewController *topMostController = [self topMostController];
+    if (callViewController.isBeingPresented || topMostController == callViewController) {
+        NSLog(@"call dialog is already opened");
+    } else {
+        NSLog(@"presenting call dialog");
+        if ([self viewController] != topMostController) {
+            NSLog(@"linphone: closing all modal windows");
+            [[self viewController] dismissViewControllerAnimated:FALSE completion:^{
+                [self presentCallView];
+            }];
+            return;
+        }
+        [self presentCallView];
     }
 }
 
