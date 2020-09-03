@@ -197,10 +197,12 @@ static CallViewController *subCallViewController;
     CDVPluginResult* pluginResult = nil;
     LinphoneManager* linphoneManager = [LinphoneManager instance];
     if (state == LinphoneCallEnd || state == LinphoneCallError) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [linphoneManager setSpeakerEnabled:FALSE];
-            isspeaker = FALSE;
-        });
+        if (isspeaker) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [linphoneManager setSpeakerEnabled:FALSE];
+                isspeaker = FALSE;
+            });
+        }
     }
     if (state == LinphoneCallError) {
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Error"];
