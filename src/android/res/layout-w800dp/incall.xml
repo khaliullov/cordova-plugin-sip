@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:keepScreenOn="true"
+    android:id="@+id/topLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#ffffff">
+
+    <TextView
+        android:id="@+id/address"
+        android:layout_width="152dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="383dp"
+        android:layout_marginBottom="213dp"
+        android:textAlignment="center" />
+
+    <TextView
+        android:id="@+id/displayName"
+        android:layout_width="152dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="384dp"
+        android:layout_marginBottom="181dp"
+        android:textAlignment="center" />
+
+    <org.linphone.mediastream.video.display.GL2JNIView
+        android:id="@+id/videoSurface"
+        android:layout_width="690dp"
+        android:layout_height="520dp"
+        android:layout_marginTop="30dp"
+        android:layout_marginStart="30dp"/>
+
+    <ImageView
+        android:id="@+id/videoOverlay"
+        android:layout_width="690dp"
+        android:layout_height="520dp"
+        android:layout_marginTop="30dp"
+        android:background="@drawable/video_overlay"
+        android:layout_marginStart="30dp"/>
+
+    <SurfaceView
+        android:id="@+id/videoCaptureSurface"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_below ="@+id/videoSurface"
+        android:layout_centerHorizontal="true"
+        android:layout_marginStart="30dp"/>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_marginLeft="100dp"
+        android:layout_toRightOf="@+id/videoSurface"
+        android:gravity="center_vertical"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <Button
+                android:id="@+id/answerButton"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_alignParentBottom="true"
+                android:layout_centerVertical="true"
+                android:layout_margin="5dp"
+                android:background="@drawable/round_button"
+                android:drawableStart="@drawable/btn_answer"
+                android:elevation="6dp"
+                android:onClick="butAnswer"
+                android:paddingLeft="29dp" />
+
+            <Button
+                android:id="@+id/unlockButton"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_alignParentBottom="true"
+                android:layout_centerVertical="true"
+                android:layout_margin="5dp"
+                android:background="@drawable/round_button"
+                android:drawableStart="@drawable/btn_open"
+                android:elevation="6dp"
+                android:onClick="butUnlock"
+                android:paddingLeft="30dp" />
+
+            <Button
+                android:id="@+id/rejectButton"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_alignParentBottom="true"
+                android:layout_centerVertical="true"
+                android:layout_margin="5dp"
+                android:layout_toLeftOf="@+id/unlockButton"
+                android:background="@drawable/round_button"
+                android:drawableStart="@drawable/btn_reject"
+                android:elevation="6dp"
+                android:onClick="rejectAnswer"
+                android:paddingLeft="29dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+</RelativeLayout>
