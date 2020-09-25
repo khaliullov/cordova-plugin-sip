@@ -476,6 +476,8 @@ public class LinphoneMiniManager implements CoreListener {
     }
 
     public void setStunServer(String stunServer) {
+        boolean turn = stunServer.substring(0, 5).equals("turn:") ? true : false;
+
         ProxyConfig mProxyConfig = mCore.getDefaultProxyConfig();
         if (mProxyConfig == null) {
             return;
@@ -487,8 +489,13 @@ public class LinphoneMiniManager implements CoreListener {
             mProxyConfig.setNatPolicy(natPolicy);
         }
         if (natPolicy != null) {
-            natPolicy.setStunServer(stunServer);
-            natPolicy.enableStun(true);
+            if (turn) {
+                natPolicy.setStunServer(stunServer.substring(5));
+                natPolicy.enableTurn(true);
+            } else {
+                natPolicy.setStunServer(stunServer);
+                natPolicy.enableStun(true);
+            }
         }
         mProxyConfig.done();
     }
