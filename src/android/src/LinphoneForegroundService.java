@@ -22,6 +22,7 @@ public class LinphoneForegroundService extends Service {
     public static Timer mTimer;
     private RegistrationState prevState;
     private LinphoneStorage mStorage;
+    private boolean relogin = false;
 
     @Override
     public void onCreate() {
@@ -57,17 +58,26 @@ public class LinphoneForegroundService extends Service {
                 mListener = new CoreListenerStub() {
                     @Override
                     public void onRegistrationStateChanged(final Core core, final ProxyConfig proxy, final RegistrationState state, String smessage) {
-                    android.util.Log.d(TAG, "STATE " + state.toString());
-                    if (state != RegistrationState.Progress && (prevState == null || prevState != state)) {
-                        android.util.Log.d(TAG, "update notification " + (prevState != null ? prevState.toString() : "null") + " - " + state.toString());
+                        android.util.Log.d(TAG, "STATE " + state.toString());
+                        if (state != RegistrationState.Progress && (prevState == null || prevState != state)) {
+                            android.util.Log.d(TAG, "update notification " + (prevState != null ? prevState.toString() : "null") + " - " + state.toString());
 
-                        LinphoneContext.isConnected = state == RegistrationState.Ok;
-                        LinphoneContext.instance().showNotification();
+                            LinphoneContext.isConnected = state == RegistrationState.Ok;
+                            LinphoneContext.instance().showNotification();
 
-                        mStorage.setStatus(LinphoneContext.isConnected ? "connected" : "disconnected");
+                            mStorage.setStatus(LinphoneContext.isConnected ? "connected" : "disconnected");
 
-                        prevState = state;
-                    }
+                            prevState = state;
+
+                            if (state == RegistrationState.Ok) {
+                                relogin = false;
+                            } else if (!relogin) {
+                                if (LinphoneMiniManager.getInstance() != null) {
+                                    relogin = true;
+                                    LinphoneMiniManager.getInstance().loginFromStorage();
+                                }
+                            }
+                        }
                     }
                 };
 
