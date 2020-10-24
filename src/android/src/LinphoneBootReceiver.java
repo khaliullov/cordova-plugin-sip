@@ -29,8 +29,10 @@ public class LinphoneBootReceiver extends BroadcastReceiver {
                 }
             }
         } else if (intent.getAction().equalsIgnoreCase(Intent.ACTION_MY_PACKAGE_REPLACED)) {
-            LinphoneContext.instance().stopForegraundService();
-            LinphoneContext.instance().runForegraundService();
+            if (LinphoneContext.instance() != null) {
+                LinphoneContext.instance().stopForegraundService();
+                LinphoneContext.instance().runForegraundService();
+            }
         }
     }
 }
