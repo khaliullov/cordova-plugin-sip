@@ -30,6 +30,7 @@ import android.opengl.GLSurfaceView;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -78,6 +79,8 @@ public class LinphoneMiniActivity extends Activity {
     private String unlockUrl;
     private IncallBinding binding;
     private AudioManager mAudioManager;
+
+    private Boolean isRinging = true;
 
     @Override
     protected void onNewIntent(Intent intent) {
@@ -463,4 +466,25 @@ public class LinphoneMiniActivity extends Activity {
 
         LinphoneContext.instance().killCurrentApp();
     }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        android.util.Log.d("MyTest", "onKeyDown");
+
+        if (isRinging) {
+            Core lc = LinphoneContext.instance().mLinphoneManager.getLc();
+
+            if (lc != null) {
+                lc.stopRinging();
+                LinphoneContext.instance().mLinphoneManager.cancelVibration();
+            }
+
+            isRinging = false;
+
+            return true;
+        }
+
+        return super.onKeyDown(keyCode, event);
+    }
+
 }

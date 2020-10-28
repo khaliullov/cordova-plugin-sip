@@ -24,13 +24,16 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Vibrator;
 import android.preference.PreferenceManager;
+import android.provider.Settings;
 
 import androidx.annotation.NonNull;
 
@@ -79,6 +82,7 @@ import org.linphone.mediastream.video.capture.hwconf.AndroidCameraConfiguration;
 import org.linphone.mediastream.video.capture.hwconf.AndroidCameraConfiguration.AndroidCamera;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Timer;
@@ -744,7 +748,7 @@ public class LinphoneMiniManager implements CoreListener {
 
         if (state == State.Connected) {
             android.util.Log.d(TAG, "StateChanged Connected");
-            mVibrator.cancel();
+            cancelVibration();
         } else if (state == State.IncomingReceived) {
             HashMap<String, String> extras = this.prepareExtras(call);
 
@@ -772,7 +776,7 @@ public class LinphoneMiniManager implements CoreListener {
                 LinphoneContext.instance().showNotification();
             }
         } else if (state == State.End) {
-            mVibrator.cancel();
+            cancelVibration();
 
             if (callActivity != null) {
                 callActivity.finish();
@@ -783,12 +787,11 @@ public class LinphoneMiniManager implements CoreListener {
             LinphoneContext.isCall = false;
             LinphoneContext.instance().showNotification();
         } else if (state == State.Error) {
-            mVibrator.cancel();
+            cancelVibration();
 
             if (callActivity != null) {
                 callActivity.finish();
             }
-
 
             LinphoneContext.isCall = false;
             LinphoneContext.instance().showNotification();
@@ -811,6 +814,12 @@ public class LinphoneMiniManager implements CoreListener {
 
         android.util.Log.d(TAG, "Call state: " + state + "(" + s + ")");
 
+    }
+
+    public void cancelVibration() {
+        if (mVibrator != null) {
+            mVibrator.cancel();
+        }
     }
 
     @Override
