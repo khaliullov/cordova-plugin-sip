@@ -10,7 +10,7 @@ import Foundation
 import linphonesw
 
 
-wclass CallViewController: UIViewController {
+class CallViewController: UIViewController {
     @IBOutlet public var remoteVideoView: UIView!
     var lc: Core?
     var acceptButton: UIButton? = nil
