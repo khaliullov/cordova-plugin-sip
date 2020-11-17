@@ -10,8 +10,7 @@ import Foundation
 import linphonesw
 
 
-class CallViewController: UIViewController {
-    var label: UILabel!
+wclass CallViewController: UIViewController {
     @IBOutlet public var remoteVideoView: UIView!
     var lc: Core?
     var acceptButton: UIButton? = nil
@@ -20,6 +19,7 @@ class CallViewController: UIViewController {
     @objc public var unlockButton: UIButton? = nil
     @objc public var addressLabel: UILabel? = nil
     @objc public var displayNameLabel: UILabel? = nil
+    @objc public var pageNameLabel: UILabel? = nil
     @objc public var doorOpenURL: String? = nil
 
     @objc public func setCore(core: OpaquePointer) {
@@ -55,34 +55,32 @@ class CallViewController: UIViewController {
         NSLog("aligning remote view")
 
         var remoteViewFrame: CGRect = self.remoteVideoView.frame
+        self.remoteVideoView.layer.cornerRadius = 10
         if (bounds.height > bounds.width) { // vertical
-            let maxWidth: Int = Int(bounds.width - 20)
-            let maxHeight: Int = Int((bounds.height - 20) / 2)
-            var calculatedHeight: Int = Int(4 * maxWidth / 3)
-            var calculatedWidth: Int = Int(3 * maxHeight / 4)
-            if calculatedWidth > maxWidth {
-                calculatedWidth = maxWidth
-                calculatedHeight = Int(3 * maxWidth / 4)
-            } else {
-                calculatedHeight = maxHeight
-                calculatedWidth = Int(4 * maxHeight / 3)
+            let maxWidth: Int = Int(bounds.width - 40)
+            let maxHeight: Int = Int((bounds.height - 110) / 2)
+            var calculateHeight: Int = Int((maxWidth / 4) * 3)
+            if calculateHeight > maxHeight {
+                calculateHeight = maxHeight
             }
-            remoteViewFrame.size.height = CGFloat(calculatedHeight)
-            remoteViewFrame.size.width = CGFloat(calculatedWidth)
+            remoteViewFrame.size.height = CGFloat(calculateHeight)
+            remoteViewFrame.size.width = CGFloat(maxWidth)
             self.remoteVideoView.frame = remoteViewFrame
-            self.remoteVideoView.center = CGPoint(x: (bounds.width) / 2, y: (bounds.height - 20) / 4)
+            self.remoteVideoView.center = CGPoint(x: (bounds.width) / 2, y: (bounds.height) / 3)
             self.addressLabel?.center = CGPoint(x: (bounds.width) / 2, y: (bounds.height - remoteViewFrame.size.height - 20) / 2 + remoteViewFrame.size.height - 60)
+            self.pageNameLabel?.center = CGPoint(x: 76, y: self.remoteVideoView.center.y - remoteViewFrame.size.height / 2 - 30)
             self.displayNameLabel?.center = CGPoint(x: (bounds.width) / 2, y: (bounds.height - remoteViewFrame.size.height - 20) / 2 + remoteViewFrame.size.height - 40)
             let offset: CGFloat = bounds.width / 3
             self.declineButton?.center = CGPoint(x: (bounds.width) / 2 - offset, y: bounds.height - offset)
             self.unlockButton?.center = CGPoint(x: (bounds.width) / 2, y: bounds.height - offset)
             self.acceptButton?.center = CGPoint(x: (bounds.width) / 2 + offset, y: bounds.height - offset)
         } else { // horizontal
-            remoteViewFrame.size.height = bounds.height - 60
-            remoteViewFrame.size.width = 4 * remoteViewFrame.size.height / 3
+            remoteViewFrame.size.height = bounds.height - 100
+            remoteViewFrame.size.width = remoteViewFrame.size.height / 3 * 4
             self.remoteVideoView.frame = remoteViewFrame
-            self.remoteVideoView.center = CGPoint(x: 10 + self.remoteVideoView.frame.width / 2, y: 10 + self.remoteVideoView.frame.height / 2)
+            self.remoteVideoView.center = CGPoint(x: 20 + self.remoteVideoView.frame.width / 2, y: 40 + self.remoteVideoView.frame.height / 2)
             self.addressLabel?.center = CGPoint(x: 10 + self.remoteVideoView.frame.width / 2, y: bounds.height - 40)
+            self.pageNameLabel?.center = CGPoint(x: 76, y: 20)
             self.displayNameLabel?.center = CGPoint(x: 10 + self.remoteVideoView.frame.width / 2, y: bounds.height - 20)
             let offset: CGFloat = (bounds.height - 40) / 3
             self.declineButton?.center = CGPoint(x: 5 * bounds.width / 6, y: (bounds.height - 20) / 2 + offset)
@@ -192,14 +190,32 @@ class CallViewController: UIViewController {
                 if let button = view as? UIButton {
                     if (button.restorationIdentifier! == "decline") {
                         declineButton = button
+                        declineButton?.layer.shadowColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.25).cgColor
+                        declineButton?.layer.shadowOffset = CGSize(width: 0.0, height: 3.0)
+                        declineButton?.layer.shadowOpacity = 1.0
+                        declineButton?.layer.shadowRadius = 10.0
+                        declineButton?.layer.masksToBounds = false
+                        declineButton?.layer.cornerRadius = 38;
                         declineButton!.removeTarget(self, action: #selector(hangUp), for: UIControl.Event.touchUpInside)
                         declineButton!.addTarget(self, action: #selector(hangUp), for: UIControl.Event.touchUpInside)
                     } else if (button.restorationIdentifier! == "accept") {
                         acceptButton = button
+                        acceptButton?.layer.shadowColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.25).cgColor
+                        acceptButton?.layer.shadowOffset = CGSize(width: 0.0, height: 3.0)
+                        acceptButton?.layer.shadowOpacity = 1.0
+                        acceptButton?.layer.shadowRadius = 10.0
+                        acceptButton?.layer.masksToBounds = false
+                        acceptButton?.layer.cornerRadius = 38;
                         acceptButton!.removeTarget(self, action: #selector(pickUp), for: UIControl.Event.touchUpInside)
                         acceptButton!.addTarget(self, action: #selector(pickUp), for: UIControl.Event.touchUpInside)
                     } else if (button.restorationIdentifier! == "unlock") {
                         unlockButton = button
+                        unlockButton?.layer.shadowColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.25).cgColor
+                        unlockButton?.layer.shadowOffset = CGSize(width: 0.0, height: 3.0)
+                        unlockButton?.layer.shadowOpacity = 1.0
+                        unlockButton?.layer.shadowRadius = 10.0
+                        unlockButton?.layer.masksToBounds = false
+                        unlockButton?.layer.cornerRadius = 38;
                         unlockButton!.removeTarget(self, action: #selector(unlock), for: UIControl.Event.touchUpInside)
                         unlockButton!.addTarget(self, action: #selector(unlock), for: UIControl.Event.touchUpInside)
                     }
@@ -209,6 +225,8 @@ class CallViewController: UIViewController {
                         addressLabel = label
                     } else if (label.restorationIdentifier! == "displayName") {
                         displayNameLabel = label
+                    } else if(label.restorationIdentifier! == "doorphone") {
+                        pageNameLabel = label
                     }
                 }
             }
@@ -224,23 +242,10 @@ class CallViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         self.initControls()
+        self.navigationController?.isNavigationBarHidden = true
 
-        // TODO refactor this!!!
-        let backBtn = UIBarButtonItem()
         var scale: CGFloat = 0.5
         var image: UIImage = UIImage.scale(image: UIImage(asset: .back)!, by: scale)!
-        backBtn.image = image
-        backBtn.tintColor = UIColor.Theme.white
-        backBtn.action = #selector(closeCallView)
-        backBtn.target = self
-        navigationItem.leftBarButtonItem = backBtn
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 17)
-        label.textColor = UIColor.Theme.white
-        label.textAlignment = .center
-        label.text = "Домофон";
-        navigationItem.titleView = label
-
         return;
     }
 }
