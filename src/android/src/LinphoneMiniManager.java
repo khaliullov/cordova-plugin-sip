@@ -987,6 +987,16 @@ public class LinphoneMiniManager implements CoreListener {
     public void onEcCalibrationAudioUninit(Core core) {
 
     }
+
+    @Override
+    public void onChatRoomEphemeralMessageDeleted(Core var1, ChatRoom var2) {
+
+    }
+
+    @Override
+    public void onChatRoomSubjectChanged(Core var1, ChatRoom var2) {
+
+    }
 }
 
 
