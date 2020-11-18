@@ -30,7 +30,7 @@
 
     <framework src="src/android/sip.gradle" custom="true" type="gradleReference" />
 
-    <lib-file src="src/android/libs/linphone-sdk-android-4.4.0.aar" />
+    <lib-file src="src/android/libs/linphone-sdk-android-4.2-131-g45180ef" />
 
     <source-file src="src/android/src/Linphone.java" target-dir="src/com/sip/linphone" />
     <source-file src="src/android/src/LinphoneMiniActivity.java" target-dir="src/com/sip/linphone" />
