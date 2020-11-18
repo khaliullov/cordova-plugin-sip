@@ -120,6 +120,12 @@ public class Linphone extends CordovaPlugin  {
             case "sendDtmf":
                 sendDtmf(args.getString(0), callbackContext);
                 return true;
+            case "enableForeground":
+                setForeground(true);
+                return true;
+            case "disableForeground":
+                setForeground(false);
+                return true;
         }
         return false;
     }
@@ -143,7 +149,11 @@ public class Linphone extends CordovaPlugin  {
             mLinphoneManager.login(username, password, domain);
             mLinphoneManager.saveAuth(username, password, domain);
 
-            LinphoneContext.instance().runForegraundService();
+            LinphoneStorage mStorage = new LinphoneStorage(mContext);
+
+            if (mStorage.getForeground()) {
+                LinphoneContext.instance().runForegroundService();
+            }
         });
     }
 
@@ -170,7 +180,7 @@ public class Linphone extends CordovaPlugin  {
             mLinphoneManager.logout();
             mLinphoneManager.saveAuth("", "", "");
             mLinphoneManager.saveStunServer("");
-            LinphoneContext.instance().stopForegraundService();
+            LinphoneContext.instance().stopForegroundService();
             LinphoneStorage mStorage = new LinphoneStorage(mContext);
             mStorage.setStatus("");
             callbackContext.success();
@@ -286,6 +296,17 @@ public class Linphone extends CordovaPlugin  {
         } catch (Exception e){
             Log.d("sendDtmf error", e.getMessage());
             callbackContext.error(e.getMessage());
+        }
+    }
+
+    public static synchronized void setForeground(Boolean flag) {
+        LinphoneStorage mStorage = new LinphoneStorage(mContext);
+        mStorage.setForeground(flag);
+
+        if (flag) {
+            LinphoneContext.instance().runForegroundService();
+        } else {
+            LinphoneContext.instance().stopForegroundService();
         }
     }
 }

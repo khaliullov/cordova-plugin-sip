@@ -153,4 +153,22 @@ module.exports =
             []
         );
     },
+    enableForeground: function (successCallback, errorCallback) {
+        cordova.exec(
+            successCallback,
+            errorCallback,
+            "Linphone",
+            "enableForeground",
+            []
+        );
+    },
+    disableForeground: function (successCallback, errorCallback) {
+        cordova.exec(
+            successCallback,
+            errorCallback,
+            "Linphone",
+            "disableForeground",
+            []
+        );
+    },
 };

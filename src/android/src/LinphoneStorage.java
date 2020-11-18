@@ -81,6 +81,15 @@ public class LinphoneStorage {
         return "0";
     }
 
+    public void setForeground(Boolean foreground) {
+        editor.putBoolean("foreground", foreground);
+        editor.commit();
+    }
+
+    public Boolean getForeground() {
+        return pref.getBoolean("foreground", true);
+    }
+
     public void setStatus(String status) {
         editorIonic.putString("intercom_status", "{\"status\":\"" + status + "\"}");
         editorIonic.commit();

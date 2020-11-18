@@ -120,7 +120,7 @@ public class LinphoneForegroundService extends Service {
             android.util.Log.e(TAG, "[Foreground Service] Starting context");
             new LinphoneContext(getApplicationContext(), true);
             LinphoneContext.instance().start(true);
-            LinphoneContext.instance().runForegraundService();
+            LinphoneContext.instance().runForegroundService();
         }
     }
 

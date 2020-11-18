@@ -140,7 +140,7 @@ public class LinphoneContext {
         return hasForeground;
     }
 
-    public void runForegraundService() {
+    public void runForegroundService() {
         if (!hasForeground) {
             Intent serviceIntent = new Intent(mContext, LinphoneForegroundService.class);
             serviceIntent.setAction(LinphoneForegroundService.ACTION_START_FOREGROUND_SERVICE);
@@ -150,7 +150,7 @@ public class LinphoneContext {
         }
     }
 
-    public void stopForegraundService() {
+    public void stopForegroundService() {
         if (hasForeground) {
             Intent serviceIntent = new Intent(mContext, LinphoneForegroundService.class);
             serviceIntent.setAction(LinphoneForegroundService.ACTION_STOP_FOREGROUND_SERVICE);

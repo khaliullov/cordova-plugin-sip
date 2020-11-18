@@ -28,7 +28,12 @@ public class LinphoneWorker extends Worker {
 
             if (LinphoneContext.instance().mLinphoneManager.loginFromStorage()) {
                 LinphoneContext.instance().mLinphoneManager.mPrefs.setPushNotificationEnabled(true);
-                LinphoneContext.instance().runForegraundService();
+
+                LinphoneStorage mStorage = new LinphoneStorage(getApplicationContext());
+
+                if (mStorage.getForeground()) {
+                    LinphoneContext.instance().runForegroundService();
+                }
             }
         } else {
 

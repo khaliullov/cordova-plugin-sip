@@ -23,15 +23,25 @@ public class LinphoneBootReceiver extends BroadcastReceiver {
 
                 if (LinphoneContext.instance().mLinphoneManager.loginFromStorage()) {
                     LinphoneContext.instance().mLinphoneManager.mPrefs.setPushNotificationEnabled(true);
-                    LinphoneContext.instance().runForegraundService();
+
+                    LinphoneStorage mStorage = new LinphoneStorage(context);
+
+                    if (mStorage.getForeground()) {
+                        LinphoneContext.instance().runForegroundService();
+                    }
                 } else {
                     LinphoneContext.instance().mLinphoneManager.mCore.refreshRegisters();
                 }
             }
         } else if (intent.getAction().equalsIgnoreCase(Intent.ACTION_MY_PACKAGE_REPLACED)) {
             if (LinphoneContext.instance() != null) {
-                LinphoneContext.instance().stopForegraundService();
-                LinphoneContext.instance().runForegraundService();
+                LinphoneContext.instance().stopForegroundService();
+
+                LinphoneStorage mStorage = new LinphoneStorage(context);
+
+                if (mStorage.getForeground()) {
+                    LinphoneContext.instance().runForegroundService();
+                }
             }
         }
     }
