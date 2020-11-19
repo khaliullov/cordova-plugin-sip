@@ -146,10 +146,10 @@ class CallViewController: UIViewController {
 
     func show_toast(opened: Bool) {
         var status: String = "Ошибка"
-        var color: UIColor = UIColor.red.withAlphaComponent(0.6)
+        var color: UIColor = UIColor(red: 153, green: 0, blue: 0, alpha: 0.9)
         if (opened) {
             status = "Дверь открыта"
-            color = UIColor.green.withAlphaComponent(0.6)
+            color = UIColor(red: 169, green: 169, blue: 169, alpha: 0.9)
         }
         self.showToast(message: status, backgroundColor: color)
     }
