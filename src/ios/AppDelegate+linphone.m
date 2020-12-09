@@ -18,7 +18,15 @@
 @implementation AppDelegate (linphone)
 
 BOOL linphoneFromPush;
-BOOL linphoneSwapped;
+unsigned char linphoneSwapped;
+const unsigned char linphoneSwapped_userNotificationCenter_willPresentNotification = 1;
+const unsigned char linphoneSwapped_userNotificationCenter_didReceiveNotificationResponse = 2;
+const unsigned char linphoneSwapped_application_didReceiveRemoteNotification = 4;
+
+NSString *door_open_url;
+NSString *address;
+NSString *entrance;
+NSString *action;
 
 - (id) getCommandInstance:(NSString*)className
 {
@@ -150,45 +158,79 @@ BOOL linphoneSwapped;
 }
 
 - (void)showIncomingDialog {
+    NSLog(@"linphone show incoming dialog");
     Linphone *linphone = [self getCommandInstance:@"Linphone"];
+    linphone.action = action;
+    linphone.address = address;
+    linphone.entrance = entrance;
+    linphone.door_open_url = door_open_url;
     [linphone showCallView];
 }
 
+- (void)refreshDoorOpenURLs:(NSDictionary *)userInfo {
+    if (userInfo[@"door_open_urls"]) {
+        NSLog(@"refreshing door_open_urls");
+        Linphone *linphone = [self getCommandInstance:@"Linphone"];
+        [linphone refreshDoorOpenURLs:userInfo];
+    }
+}
+
+// for background pushes (apns-push-type: background)
 - (void)linphoneApplication:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler
 {
-    NSLog(@"linphone Received Remote notification");
-    if (linphoneSwapped) {  // call swizzled method
+    NSLog(@"linphone received background application:didReceiveRemoteNotification");
+    NSLog(@"linphone application:didReceiveRemoteNotification userInfo: %@", userInfo);
+    if (linphoneSwapped & linphoneSwapped_application_didReceiveRemoteNotification) {  // call swizzled method
         [self linphoneApplication:application didReceiveRemoteNotification:userInfo fetchCompletionHandler:completionHandler];
     }
-    if ([userInfo[@"aps"][@"category"] isEqual: @"incoming_call"]) {
-        NSLog(@"incoming call");
-        if(application.applicationState != UIApplicationStateActive) {
-            linphoneFromPush = TRUE;
-        } else {
-            [self showIncomingDialog];
-            NSLog(@"received push notification while foreground");
-            linphoneFromPush = FALSE;
-        }
-    } else {
-        linphoneFromPush = FALSE;
+    if ([userInfo[@"aps"][@"category"] isEqual: @"refresh_registration"]) {
+        NSLog(@"linphone refresh_registration");
+        [self refreshRegistration];
+        [self refreshDoorOpenURLs:userInfo];
     }
     completionHandler(UIBackgroundFetchResultNoData);
 }
 
 - (void)linphoneSetupPushHandlers
 {
-    // this = self;
+    UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
+
+    linphoneSwapped = 0;
+    // application:didReceiveRemoteNotification:fetchCompletionHandler:
     if ([[[UIApplication sharedApplication] delegate] respondsToSelector:@selector(application:didReceiveRemoteNotification:fetchCompletionHandler:)]) {
-        NSLog(@"linphone swapping listener");
+        NSLog(@"linphone swapping application:didReceiveRemoteNotification listener");
         Method original, swizzled;
         original = class_getInstanceMethod([self class], @selector(linphoneApplication:didReceiveRemoteNotification:fetchCompletionHandler:));
         swizzled = class_getInstanceMethod([[[UIApplication sharedApplication] delegate] class], @selector(application:didReceiveRemoteNotification:fetchCompletionHandler:));
         method_exchangeImplementations(original, swizzled);
-        linphoneSwapped = TRUE;
+        linphoneSwapped += linphoneSwapped_application_didReceiveRemoteNotification;
     } else {
-        NSLog(@"linphone adding listener");
+        NSLog(@"linphone adding application:didReceiveRemoteNotification listener");
         class_addMethod([[[UIApplication sharedApplication] delegate] class], @selector(application:didReceiveRemoteNotification:fetchCompletionHandler:), class_getMethodImplementation([self class], @selector(linphoneApplication:didReceiveRemoteNotification:fetchCompletionHandler:)), nil);
-        linphoneSwapped = FALSE;
+    }
+    // userNotificationCenter:willPresentNotification:withCompletionHandler:
+    if ([[center delegate] respondsToSelector:@selector(userNotificationCenter:willPresentNotification:withCompletionHandler:)]) {
+        NSLog(@"linphone swapping userNotificationCenter:willPresentNotification listener");
+        Method original, swizzled;
+        original = class_getInstanceMethod([self class], @selector(linphoneUserNotificationCenter:willPresentNotification:withCompletionHandler:));
+        swizzled = class_getInstanceMethod([[center delegate] class], @selector(userNotificationCenter:willPresentNotification:withCompletionHandler:));
+        method_exchangeImplementations(original, swizzled);
+        linphoneSwapped += linphoneSwapped_userNotificationCenter_willPresentNotification;
+    } else {
+        NSLog(@"linphone adding userNotificationCenter:willPresentNotification listener");
+        class_addMethod([[center delegate] class], @selector(userNotificationCenter:willPresentNotification:withCompletionHandler:), class_getMethodImplementation([self class], @selector(linphoneUserNotificationCenter:willPresentNotification:withCompletionHandler:)), nil);
+    }
+    // userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:
+    if ([[center delegate] respondsToSelector:@selector(userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:)]) {
+        NSLog(@"linphone swapping userNotificationCenter:didReceiveNotificationResponse listener");
+        Method original, swizzled;
+        original = class_getInstanceMethod([self class], @selector(linphoneUserNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:));
+        swizzled = class_getInstanceMethod([[center delegate] class], @selector(userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:));
+        method_exchangeImplementations(original, swizzled);
+        linphoneSwapped += linphoneSwapped_userNotificationCenter_didReceiveNotificationResponse;
+    } else {
+        NSLog(@"linphone adding userNotificationCenter:didReceiveNotificationResponse listener");
+        class_addMethod([[center delegate] class], @selector(userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:), class_getMethodImplementation([self class], @selector(linphoneUserNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:)), nil);
     }
 }
 
@@ -218,26 +260,56 @@ BOOL linphoneSwapped;
     if (![self linphonePermissionState]) {
         NSLog(@"push notifications are not registered");
         if ([UNUserNotificationCenter class] != nil) {
-          // iOS 10 or later
-          // For iOS 10 display notification (sent via APNS)
-          // [UNUserNotificationCenter currentNotificationCenter].delegate = self;
-          UNAuthorizationOptions authOptions = UNAuthorizationOptionAlert | UNAuthorizationOptionSound | UNAuthorizationOptionBadge;
-          [[UNUserNotificationCenter currentNotificationCenter]
-              requestAuthorizationWithOptions:authOptions
-              completionHandler:^(BOOL granted, NSError * _Nullable error) {
+            // iOS 10 or later
+            // For iOS 10 display notification (sent via APNS)
+            [UNUserNotificationCenter currentNotificationCenter].delegate = self;
+            UNAuthorizationOptions authOptions = UNAuthorizationOptionAlert | UNAuthorizationOptionSound | UNAuthorizationOptionBadge;
+            [[UNUserNotificationCenter currentNotificationCenter] requestAuthorizationWithOptions:authOptions completionHandler:^(BOOL granted, NSError * _Nullable error) {
                 // ...
                 if (granted && !error) {
                     dispatch_async(dispatch_get_main_queue(), ^{
-                           [[UIApplication sharedApplication] registerForRemoteNotifications];
-                           NSLog(@"registered for remote push");
-                       });
+                        [[UIApplication sharedApplication] registerForRemoteNotifications];
+                        NSLog(@"registered for remote push");
+                        [self initPushCategories];
+                    });
                 } else {
                     NSLog(@"not granted for iOS");
                 }
-              }];
+            }];
         } else {
             NSLog(@"not supported iOS version for notifications");
         }
+    } else {
+        [self initPushCategories];
+    }
+}
+
+- (void)initPushCategories
+{
+    NSLog(@"initializing push categories");
+    if ([UNUserNotificationCenter class] != nil) {
+        UNUserNotificationCenter* center = [UNUserNotificationCenter currentNotificationCenter];
+        [center getNotificationCategoriesWithCompletionHandler:^(NSSet<UNNotificationCategory *> * _Nonnull categories) {
+            BOOL found = FALSE;
+            for(UNNotificationCategory* category in categories) {
+                if ([category.identifier isEqualToString:@"incoming_call"]) {
+                    found = TRUE;
+                    break;
+                }
+            }
+            if (found == FALSE) {
+                NSMutableSet* newCategories = [categories mutableCopy];
+                NSLog(@"push category 'incoming_call' was not found");
+                UNNotificationAction *pickupAction = [UNNotificationAction actionWithIdentifier:@"incoming_call.pickup" title:@"Ответить" options:UNNotificationActionOptionForeground];
+                UNNotificationAction *unlockAction = [UNNotificationAction actionWithIdentifier:@"incoming_call.unlock" title:@"Открыть" options:UNNotificationActionOptionForeground];
+                UNNotificationAction *declineAction = [UNNotificationAction actionWithIdentifier:@"incoming_call.hangup" title:@"Отклонить" options:UNNotificationActionOptionForeground];
+                UNNotificationCategory *notificationCategory = [UNNotificationCategory categoryWithIdentifier:@"incoming_call" actions:@[pickupAction, unlockAction, declineAction] intentIdentifiers:@[] options:UNNotificationCategoryOptionCustomDismissAction];
+                [newCategories addObject:notificationCategory];
+                [center setNotificationCategories:newCategories];
+            } else {
+                NSLog(@"push category 'incoming_call' already initilized");
+            }
+        }];
     }
 }
 
@@ -254,6 +326,11 @@ BOOL linphoneSwapped;
 - (void)initLinphoneCore:(NSNotification *)notification
 {
     linphoneFromPush = FALSE;
+    if ([self linphonePermissionState]) {
+        NSLog(@"linphone initialising notification center delegate");
+        [UNUserNotificationCenter currentNotificationCenter].delegate = self;
+        [[UIApplication sharedApplication] registerForRemoteNotifications];
+    }
     [self initPushNotifications];
     NSLog(@"initLinphoneCore");
     Linphone *linphone = [self getCommandInstance:@"Linphone"];
@@ -261,6 +338,13 @@ BOOL linphoneSwapped;
     [[LinphoneManager instance] launchLinphoneCore];
     //[[LinphoneManager instance] initLinphoneCore];
     //[[LinphoneManager instance] setFirewallPolicy:@"PolicyNoFirewall"];
+}
+
+- (void)refreshRegistration
+{
+    NSLog(@"linphone refreshing registration");
+    Linphone *linphone = [self getCommandInstance:@"Linphone"];
+    [linphone ensureRegistered];
 }
 
 - (void)dealloc
@@ -275,4 +359,41 @@ BOOL linphoneSwapped;
     [[LinphoneManager instance] destroyLinphoneCore];
 }
 
+#pragma mark - REMOTE NOTIFICATION DELEGATE
+
+-(void)linphoneUserNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler{
+    //Called when a notification is delivered to a foreground app.
+    NSDictionary *userInfo = notification.request.content.userInfo;
+    NSLog(@"linphone userNotificationCenter:willPresentNotification userInfo: %@", userInfo);
+    if (linphoneSwapped & linphoneSwapped_userNotificationCenter_willPresentNotification) {  // call swizzled method
+        [self linphoneUserNotificationCenter:center willPresentNotification:notification withCompletionHandler:completionHandler];
+    }
+    linphoneFromPush = FALSE;
+    if ([userInfo[@"aps"][@"category"] isEqual: @"incoming_call"]) {
+        NSLog(@"linphone received push notification while foreground");
+        door_open_url = userInfo[@"door_open_url"];
+        action = UNNotificationDefaultActionIdentifier;
+        address = userInfo[@"address"];
+        entrance = userInfo[@"entrance"];
+        [self showIncomingDialog];
+        //completionHandler(UNNotificationPresentationOptionSound);
+    }
+    completionHandler(UNNotificationPresentationOptionNone);
+}
+
+-(void)linphoneUserNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)(void))completionHandler{
+    NSDictionary *userInfo = response.notification.request.content.userInfo;
+    NSLog(@"linphone userNotificationCenter:didReceiveNotificationResponse userInfo: %@", userInfo);
+    if (linphoneSwapped & linphoneSwapped_userNotificationCenter_didReceiveNotificationResponse) {  // call swizzled method
+        [self linphoneUserNotificationCenter:center didReceiveNotificationResponse:response withCompletionHandler:completionHandler];
+    }
+    if ([userInfo[@"aps"][@"category"] isEqual: @"incoming_call"]) {
+        linphoneFromPush = TRUE;
+        door_open_url = userInfo[@"door_open_url"];
+        action = response.actionIdentifier;
+        address = userInfo[@"address"];
+        entrance = userInfo[@"entrance"];
+    }
+    completionHandler();
+}
 @end

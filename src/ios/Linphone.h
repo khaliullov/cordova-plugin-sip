@@ -11,7 +11,13 @@
 
 @property (nonatomic) LinphoneCore *lc;
 @property (nonatomic) LinphoneCall *call;
+@property (nonatomic) NSString *door_open_url;
+@property (nonatomic) NSString *address;
+@property (nonatomic) NSString *entrance;
+@property (nonatomic) NSString *action;
 
+- (void)refreshDoorOpenURLs:(NSDictionary *)userInfo;
+- (void)ensureRegistered;
 - (void)showCallView;
 - (void)acceptCall:(CDVInvokedUrlCommand*)command;
 - (void)listenCall:(CDVInvokedUrlCommand*)command;

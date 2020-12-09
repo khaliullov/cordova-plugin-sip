@@ -88,36 +88,73 @@ static CallViewController *subCallViewController;
         subCallViewController.doorOpenURL = @"";
         LinphoneAddress *address = linphone_call_get_remote_address(self->call);
         const char *username = linphone_address_get_username(address);
-        NSString* contacts = [[NSUserDefaults standardUserDefaults] stringForKey:@"contacts"];
-        if (contacts && NSClassFromString(@"NSJSONSerialization"))
-        {
-            NSData* data = [contacts dataUsingEncoding:NSUTF8StringEncoding];
-            NSError *error = nil;
-            id object = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
-            if (!error && [object isKindOfClass:[NSArray class]]) {
-                for(NSDictionary *contact in object) {
-                    NSString *sip_name = [contact objectForKey:@"sip_name"];
-                    NSString *door_open_url = [contact objectForKey:@"door_open_url"];
-                    if (sip_name && door_open_url && [sip_name isEqualToString:[NSString stringWithUTF8String:username]]) {
-                        subCallViewController.unlockButton.enabled = true;
-                        NSString *addressLine = [contact objectForKey:@"address"];
-                        NSString *entrance = [contact objectForKey:@"entrance"];
-                        subCallViewController.doorOpenURL = door_open_url;
-                        if (addressLine) {
-                            subCallViewController.addressLabel.text = addressLine;
-                        } else {
-                            const char *address_as_string = linphone_address_as_string_uri_only(address);
-                            subCallViewController.addressLabel.text = @(address_as_string);
-                        }
-                        if (entrance) {
-                            subCallViewController.displayNameLabel.text = [NSString stringWithFormat: @"Подъезд №%@", entrance];
-                        } else {
-                            subCallViewController.displayNameLabel.text = @(username);
+        if (!self.door_open_url || !self.address) {
+            NSLog(@"linphone door_open_url or address was not passed via push, seaching in contacts...");
+            NSString* contacts = [[NSUserDefaults standardUserDefaults] stringForKey:@"contacts"];
+            if (contacts && NSClassFromString(@"NSJSONSerialization"))
+            {
+                NSData* data = [contacts dataUsingEncoding:NSUTF8StringEncoding];
+                NSError *error = nil;
+                id object = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+                if (!error && [object isKindOfClass:[NSArray class]]) {
+                    for(NSDictionary *contact in object) {
+                        NSString *sip_name = [contact objectForKey:@"sip_name"];
+                        NSString *door_open_url = [contact objectForKey:@"door_open_url"];
+                        if (sip_name && door_open_url && [sip_name isEqualToString:[NSString stringWithUTF8String:username]]) {
+                            NSLog(@"linphone found address in contacts");
+                            if (!self.address) {
+                                self.address = [contact objectForKey:@"address"];
+                            }
+                            if (!self.entrance) {
+                                self.entrance = [contact objectForKey:@"entrance"];
+                            }
+                            if (!self.door_open_url) {
+                                self.door_open_url = door_open_url;
+                            }
+                            break;
                         }
                     }
                 }
             }
+        } else {
+            NSLog(@"linphone using address and door_open_url from push!");
         }
+        if (self.door_open_url) {
+            subCallViewController.unlockButton.enabled = true;
+            subCallViewController.doorOpenURL = self.door_open_url;
+        } else {
+            subCallViewController.doorOpenURL = nil;
+            NSLog(@"linphone door_open_url is empty!");
+        }
+        if (self.address) {
+            subCallViewController.addressLabel.text = self.address;
+        } else {
+            NSLog(@"linphone address is empty!");
+            const char *address_as_string = linphone_address_as_string_uri_only(address);
+            subCallViewController.addressLabel.text = @(address_as_string);
+        }
+        if (self.entrance) {
+            subCallViewController.displayNameLabel.text = [NSString stringWithFormat: @"Подъезд №%@", self.entrance];
+        } else {
+            subCallViewController.displayNameLabel.text = @(username);
+        }
+        if (self.action) {
+            // subCallViewController.action = self.action;
+            if ([self.action isEqualToString:@"incoming_call.pickup"]) {
+                NSLog(@"linphone picking up from context menu");
+                [subCallViewController pickUp];
+            } else if ([self.action isEqualToString:@"incoming_call.unlock"]) {
+                NSLog(@"linphone unlocking from context menu");
+                [subCallViewController unlock];
+            } else if ([self.action isEqualToString:@"incoming_call.hangup"]) {
+                NSLog(@"linphone declining from context menu");
+                [subCallViewController hangUp];
+            }
+        }
+        self.door_open_url = nil;
+        self.address = nil;
+        self.entrance = nil;
+        self.action = nil;
 
         if (linphone_call_get_dir(self->call) == LinphoneCallIncoming) {
             dispatch_async(dispatch_get_main_queue(), ^{
@@ -134,6 +171,44 @@ static CallViewController *subCallViewController;
             });
         }
     }];
+}
+
+- (void)ensureRegistered {
+    self->lc = LinphoneManager.getLc;
+    linphone_core_ensure_registered(self->lc);
+}
+
+- (void)refreshDoorOpenURLs:(NSDictionary *)userInfo {
+    if (!userInfo[@"door_open_urls"]) return;
+    NSArray *doorOpenURLs = [userInfo[@"door_open_urls"] componentsSeparatedByString:@","];
+    if ([doorOpenURLs count] < 1) return;
+    NSString* contacts = [[NSUserDefaults standardUserDefaults] stringForKey:@"contacts"];
+    if (contacts && NSClassFromString(@"NSJSONSerialization"))
+    {
+        NSData* data = [contacts dataUsingEncoding:NSUTF8StringEncoding];
+        NSError *error = nil;
+        id object = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+        if (!error && [object isKindOfClass:[NSArray class]]) {
+            NSMutableArray *contacts = [(NSArray *)object mutableCopy];
+            BOOL modified = FALSE;
+            for(int i = 0; i < [contacts count]; i++) {
+                NSMutableDictionary *contact = [NSMutableDictionary dictionaryWithDictionary:(NSDictionary *)[object objectAtIndex:i]];
+                NSString *id = [contact objectForKey:@"id"];
+                NSString *doorOpenURL = userInfo[[NSString stringWithFormat:@"door_open_url_%@", id]];
+                if(!doorOpenURL) continue;
+                [contact setObject:doorOpenURL forKey:@"door_open_url"];
+                contacts[i] = contact;
+                modified = TRUE;
+            }
+            if (modified == TRUE) {
+                id jsonDictionaryOrArray = [NSJSONSerialization dataWithJSONObject:contacts options:kNilOptions error:&error];
+                if (!error) {
+                    NSLog(@"linphone saving contacts...");
+                    [[NSUserDefaults standardUserDefaults] setValue:[[NSString alloc] initWithData:jsonDictionaryOrArray encoding:NSUTF8StringEncoding] forKey:@"contacts"];
+                }
+            }
+        }
+    }
 }
 
 - (void)showCallView {
@@ -359,7 +434,6 @@ static CallViewController *subCallViewController;
 - (void)setStunServer:(CDVInvokedUrlCommand*)command {
     NSString* stunServer = [[command arguments] objectAtIndex:0];
     lc = LinphoneManager.getLc;
-    stunServer = @"stun4.l.google.com:19302";
     NSLog(stunServer);
     linphone_core_set_stun_server(lc, [stunServer UTF8String]);
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];

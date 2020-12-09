@@ -155,14 +155,14 @@
             <source url="https://github.com/CocoaPods/Specs.git" />
         </config>
         <pods use-frameworks="true">
-            <pod name="linphone-sdk" spec="4.4.1" />
-            <pod name="linphone-sdk/basic-frameworks" spec="~> 4.4.1" />
-            <pod name="linphone-sdk/app-extension-swift" spec="~> 4.4.1" />
-            <pod name="Firebase" />
-            <pod name="Firebase/Core" />
-            <pod name="Firebase/Analytics" />
-            <pod name="Firebase/Crashlytics" />
-            <pod name="Firebase/Messaging" />
+            <pod name="linphone-sdk" spec="4.4.15" />
+            <pod name="linphone-sdk/basic-frameworks" spec="~> 4.4.15" />
+            <pod name="linphone-sdk/app-extension-swift" spec="~> 4.4.15" />
+            <pod name="Firebase" spec="~> 6.34.0" />
+            <pod name="FirebaseCore" spec="~> 6.10.4" />
+            <pod name="FirebaseAnalytics" spec="~> 6.9.0" />
+            <pod name="FirebaseCrashlytics" spec="~> 4.6.2" />
+            <pod name="FirebaseMessaging" spec="~> 4.7.1" />
         </pods>
     </podspec>
     <framework src="AVFoundation.framework" />
@@ -182,8 +182,8 @@
       <merges target="cordova.plugins.sip" />
     </js-module>
 
-    <preference name="CAMERA_USAGE_DESCRIPTION" default="This will allow ${PRODUCT_NAME} to make videocalls with Intercom."/>
-    <preference name="MICROPHONE_USAGE_DESCRIPTION" default="This will allow ${PRODUCT_NAME} to make talk with Intercom."/>
+    <preference name="CAMERA_USAGE_DESCRIPTION" default="This will allow ${PRODUCT_NAME} to make videocalls with Intercom visitor."/>
+    <preference name="MICROPHONE_USAGE_DESCRIPTION" default="This will allow ${PRODUCT_NAME} to talk with Intercom visitor."/>
     <config-file target="*-Info.plist" parent="NSCameraUsageDescription">
         <string>$CAMERA_USAGE_DESCRIPTION</string>
     </config-file>
