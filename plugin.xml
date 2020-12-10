@@ -163,7 +163,7 @@
             <pod name="FirebaseAnalytics" spec="~> 6.9.0" />
             <pod name="FirebaseCrashlytics" spec="~> 4.6.2" />
             <pod name="FirebaseMessaging" spec="~> 4.7.1" />
-            <pod name="GoogleUtilities" spec="~> 6.7.2'" />
+            <pod name="GoogleUtilities" spec="~> 6.7.2" />
         </pods>
     </podspec>
     <framework src="AVFoundation.framework" />
