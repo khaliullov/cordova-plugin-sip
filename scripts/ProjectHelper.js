@@ -336,6 +336,7 @@ class ProjectHelper {
 }
 
 ProjectHelper.PODFILE_SNIPPET = "target 'SipNotificationService' do\n" +
+  "\tpod 'GoogleUtilities', '~> 6.7.2'\n" +
   "\tpod 'FirebaseMessaging', '~> 4.7.1'\n" +
   "end\n";
 ProjectHelper.COMMENT_KEY = /_comment$/;
