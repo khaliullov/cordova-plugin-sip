@@ -127,6 +127,7 @@ NSString *action;
             NSLog(@"Remote instance ID token: %@", result.token);
             NSData* token = [result.token dataUsingEncoding:NSUTF8StringEncoding];
             [[LinphoneManager instance] setRemoteNotificationToken:token];
+            [self initPushCategories];
         }
     }];
     // [self initRegistration];
@@ -265,8 +266,7 @@ NSString *action;
             [UNUserNotificationCenter currentNotificationCenter].delegate = self;
             UNAuthorizationOptions authOptions = UNAuthorizationOptionAlert | UNAuthorizationOptionSound | UNAuthorizationOptionBadge;
             [[UNUserNotificationCenter currentNotificationCenter] requestAuthorizationWithOptions:authOptions completionHandler:^(BOOL granted, NSError * _Nullable error) {
-                // ...
-                if (granted && !error) {
+                if (error == nil) {
                     dispatch_async(dispatch_get_main_queue(), ^{
                         [[UIApplication sharedApplication] registerForRemoteNotifications];
                         NSLog(@"registered for remote push");
