@@ -429,11 +429,11 @@ static BOOL libStarted = FALSE;
 
     theLinphoneCore = linphone_factory_create_shared_core_with_config(factory, _configDb, NULL, [kLinphoneMsgNotificationAppGroupId UTF8String], true);
     linphone_core_add_callbacks(theLinphoneCore, cbs);
-    LCSipTransports data = {0, 0, 0, 0};
-    data.udp_port = [@0 intValue];
-    data.tcp_port = [@0 intValue];
-    data.dtls_port = [@0 intValue];
-    data.tls_port = [@0 intValue];
+    LCSipTransports data = {-1, -1, -1, -1};
+    data.udp_port = [@-1 intValue];
+    data.tcp_port = [@-1 intValue];
+    data.dtls_port = [@-1 intValue];
+    data.tls_port = [@-1 intValue];
     linphone_core_set_sip_transports(theLinphoneCore, &data);
     linphone_core_enable_ipv6(theLinphoneCore, FALSE);
 
