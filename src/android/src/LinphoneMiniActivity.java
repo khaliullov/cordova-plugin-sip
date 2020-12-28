@@ -74,6 +74,7 @@ public class LinphoneMiniActivity extends Activity {
     private Animation answerAnim;
     private Animation unlockAnim;
     private Timer unlockTimer;
+    private Timer closeTimer;
     private String address;
     private String displayName;
     private String unlockUrl;
@@ -271,6 +272,11 @@ public class LinphoneMiniActivity extends Activity {
     }
 
     class AsyncDoorOpenRequest extends AsyncTask<String, Void, String> {
+        View view;
+
+        AsyncDoorOpenRequest(View v) {
+            view = v;
+        }
 
         @Override
         protected String doInBackground(String... args) {
@@ -320,23 +326,31 @@ public class LinphoneMiniActivity extends Activity {
                     httpConn.disconnect();
                 }
             }
+
             android.util.Log.d("LinphoneSip", "door status");
             android.util.Log.d("LinphoneSip", result);
+
             return result;
         }
 
         @Override
         protected void onPostExecute(String result) {
-            Toast.makeText(getApplicationContext(),
-                    result.equals("opened") ? "Дверь открыта" : "Ошибка!",
-                    Toast.LENGTH_SHORT).show();
+            if (result.equals("opened")) {
+                Toast.makeText(getApplicationContext(),
+                        "Дверь открыта",
+                        Toast.LENGTH_SHORT).show();
+
+                closeCall();
+            } else {
+                legacybutUnlock(view);
+            }
         }
 
     }
 
     public void unlockRequest(View v) {
         v.startAnimation(unlockAnim);
-        new AsyncDoorOpenRequest().execute(unlockUrl);
+        new AsyncDoorOpenRequest(v).execute(unlockUrl);
     }
 
     public void butUnlock(View v) {
@@ -363,11 +377,13 @@ public class LinphoneMiniActivity extends Activity {
                 TimerTask lTask = new TimerTask() {
                     @Override
                     public void run() {
-                        call.cancelDtmfs();
-                        unlockTimer.cancel();
-                        unlockTimer = null;
+                    call.cancelDtmfs();
+                    unlockTimer.cancel();
+                    unlockTimer = null;
 
-                        android.util.Log.d("LinphoneSip", "stop Dtmfs");
+                    android.util.Log.d("LinphoneSip", "stop Dtmfs");
+
+                    closeCall();
                     }
                 };
 
@@ -375,6 +391,30 @@ public class LinphoneMiniActivity extends Activity {
                 unlockTimer.schedule(lTask, 1600);
             }
         }
+    }
+
+    public void closeCall() {
+        TimerTask lTask = new TimerTask() {
+            @Override
+            public void run() {
+                closeTimer.cancel();
+                closeTimer = null;
+
+                Core lc = LinphoneContext.instance().mLinphoneManager.getLc();
+
+                if (lc != null) {
+
+                    Call c = lc.getCurrentCall();
+
+                    if (c != null){
+                        c.terminate();
+                    }
+                }
+            }
+        };
+
+        closeTimer = new Timer("Close scheduler");
+        closeTimer.schedule(lTask, 1000);
     }
 
     @Override
