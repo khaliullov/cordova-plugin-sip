@@ -85,6 +85,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -738,8 +739,46 @@ public class LinphoneMiniManager implements CoreListener {
                 }
             }
         } catch (JSONException e) {
+
         }
+
         return extras;
+    }
+
+    static void refreshUrls(Map<String, String> data) {
+        android.util.Log.d(TAG, "[refreshUrls] start");
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+        String PREFS_NAME = preferences.getString("NativeStorageSharedPreferencesName", "NativeStorage");
+        SharedPreferences settings = mContext.getSharedPreferences(PREFS_NAME, Activity.MODE_PRIVATE);
+        String jsonContacts = settings.getString("contacts", "[]");
+
+        try {
+            JSONArray contacts = new JSONArray(jsonContacts);
+
+            for (int i = 0; i < contacts.length(); i++) {
+                JSONObject contact = (JSONObject) contacts.getJSONObject(i);
+
+                if (contact.has("id") && contact.has("sip_name") && contact.has("door_open_url")) {
+                    String key = "door_open_url_" + contact.getString("id");
+                    android.util.Log.d(TAG, "[refreshUrls] key " + key);
+
+                    if (data.containsKey(key)) {
+                        android.util.Log.d(TAG, "[refreshUrls] url " + data.get(key));
+                        contact.put("door_open_url", data.get(key));
+
+                        contacts.put(i, contact);
+                    }
+                }
+            }
+
+            SharedPreferences.Editor editor = settings.edit();
+            editor.putString("contacts", contacts.toString());
+            editor.commit();
+
+            android.util.Log.d(TAG, "[refreshUrls] save");
+        } catch (JSONException e) {
+
+        }
     }
 
     @Override

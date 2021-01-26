@@ -44,11 +44,23 @@
     <source-file src="src/android/src/LinphoneWorker.java" target-dir="src/com/sip/linphone" />
     <source-file src="src/android/src/LinphoneDeviceUtils.java" target-dir="src/com/sip/linphone" />
     <source-file src="src/android/src/LinphoneForegroundService.java" target-dir="src/com/sip/linphone" />
+    <source-file src="src/android/src/UnlockWidget.java" target-dir="src/com/sip/linphone" />
+    <source-file src="src/android/src/LinphoneUnlockActivity.java" target-dir="src/com/sip/linphone" />
+    <source-file src="src/android/src/adapters/DoorphoneArrayAdapter.java" target-dir="src/com/sip/linphone/adapters" />
+    <source-file src="src/android/src/fragments/TitleFragment.java" target-dir="src/com/sip/linphone/fragments" />
+    <source-file src="src/android/src/fragments/DoorphoneFragment.java" target-dir="src/com/sip/linphone/fragments" />
+    <source-file src="src/android/src/models/Doorphone.java" target-dir="src/com/sip/linphone/models" />	
     <source-file src="src/android/res/layout-land/incall.xml" target-dir="res/layout-land" />
     <source-file src="src/android/res/layout-port/incall.xml" target-dir="res/layout-port" />
     <source-file src="src/android/res/layout-sw600dp/incall.xml" target-dir="res/layout-sw600dp" />    
     <source-file src="src/android/res/layout-sw600dp-land/incall.xml" target-dir="res/layout-sw600dp-land" />    
     <source-file src="src/android/res/layout/dialog.xml" target-dir="res/layout" />
+    <source-file src="src/android/res/layout/activity_linphone_unlock.xml" target-dir="res/layout" />
+    <source-file src="src/android/res/layout/fragment_linphone_doorphones.xml" target-dir="res/layout" />
+    <source-file src="src/android/res/layout/fragment_linphone_title.xml" target-dir="res/layout" />
+    <source-file src="src/android/res/layout/item_linphone_doorphone.xml" target-dir="res/layout" />
+    <source-file src="src/android/res/layout/unlock_widget.xml" target-dir="res/layout" />
+    <source-file src="src/android/res/xml/unlock_widget_info.xml" target-dir="res/xml" />
     <source-file src="src/android/res/raw/linphonerc_default" target-dir="res/raw" />
     <source-file src="src/android/res/raw/linphonerc_factory" target-dir="res/raw" />
     <source-file src="src/android/res/raw/lpconfig.xsd" target-dir="res/raw" />
@@ -59,6 +71,7 @@
     <!-- drawable src/android/resources -->
     <resource-file src="src/android/res/anim/alpha.xml" target="res/anim/alpha.xml" />
     <resource-file src="src/android/res/anim/alpha_reverse.xml" target="res/anim/alpha_reverse.xml" />
+    <resource-file src="src/android/res/drawable/example_appwidget_preview.png" target="res/drawable/example_appwidget_preview.png" />
     <resource-file src="src/android/res/drawable/icon.png" target="res/drawable/icon.png" />
     <resource-file src="src/android/res/drawable/video_overlay.png" target="res/drawable/video_overlay.png" />
     <resource-file src="src/android/res/drawable/btn_open.xml" target="res/drawable/btn_open.xml" />
@@ -86,6 +99,20 @@
       <uses-feature android:name="android.hardware.microphone" android:required="true" />
     </config-file>
     <config-file target="AndroidManifest.xml" parent="/manifest/application">
+	  <activity android:theme="@android:style/Theme.Black.NoTitleBar" android:launchMode="singleTop" android:name="com.sip.linphone.LinphoneUnlockActivity">
+		<intent-filter>
+			<action android:name="android.intent.action.VIEW" />
+			<category android:name="android.intent.category.DEFAULT" />
+			<category android:name="android.intent.category.BROWSABLE" />
+			<data android:scheme="ru.simdev.evo.video" />
+		</intent-filter>
+	  </activity>
+	  <receiver android:name="com.sip.linphone.UnlockWidget">
+		<intent-filter>
+			<action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+		</intent-filter>
+		<meta-data android:name="android.appwidget.provider" android:resource="@xml/unlock_widget_info" />
+	  </receiver>
       <activity android:name="com.sip.linphone.LinphoneMiniActivity" android:theme="@android:style/Theme.Black.NoTitleBar" />
       <service android:exported="false" android:name="com.sip.linphone.LinphoneFirebaseMessaging">
           <intent-filter>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+
+    android:padding="10dp">
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/config_unlock_title"
+        android:hint="Название"
+        android:maxLines="1"
+        android:paddingBottom="10dp"/>
+
+    <Button
+        android:id="@+id/config_unlock_cancel"
+        android:layout_width="140dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:text="Отмена">
+
+    </Button>
+
+    <Button
+        android:id="@+id/config_unlock_add"
+        android:layout_width="140dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:text="Готово">
+
+    </Button>
+</RelativeLayout>
