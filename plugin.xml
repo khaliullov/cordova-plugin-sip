@@ -99,7 +99,7 @@
       <uses-feature android:name="android.hardware.microphone" android:required="true" />
     </config-file>
     <config-file target="AndroidManifest.xml" parent="/manifest/application">
-	  <activity android:theme="@android:style/Theme.Black.NoTitleBar" android:launchMode="singleTop" android:name="com.sip.linphone.LinphoneUnlockActivity">
+	  <activity android:theme="@android:style/Theme.Light.NoTitleBar" android:launchMode="singleTop" android:name="com.sip.linphone.LinphoneUnlockActivity">
 		<intent-filter>
 			<action android:name="android.intent.action.VIEW" />
 			<category android:name="android.intent.category.DEFAULT" />
