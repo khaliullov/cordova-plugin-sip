@@ -220,8 +220,11 @@ public class LinphoneMiniActivity extends Activity {
         binding.address.setText(address);
         binding.displayName.setText(displayName);
 
-        String videoDeviceId = LinphoneContext.instance().mLinphoneManager.getLc().getVideoDevice();
-        LinphoneContext.instance().mLinphoneManager.getLc().setVideoDevice(videoDeviceId);
+        try {
+            String videoDeviceId = LinphoneContext.instance().mLinphoneManager.getLc().getVideoDevice();
+            LinphoneContext.instance().mLinphoneManager.getLc().setVideoDevice(videoDeviceId);
+        } catch (NullPointerException e) { }
+
         //if (address != "") {
             // Linphone.mLinphoneManager.newOutgoingCall(address, displayName);
         //}
