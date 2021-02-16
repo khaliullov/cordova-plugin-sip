@@ -6,16 +6,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-
-import androidx.fragment.app.Fragment;
+import android.widget.ImageView;
 
 import com.sip.linphone.LinphoneUnlockActivity;
 
+import ru.simdev.evo.components.view.TextViewHeader;
 import ru.simdev.evo.video.R;
+import ru.simdev.evo.components.fragments.BaseFragment;
 
-public class TitleFragment extends Fragment {
-    private static final String TAG = "LinphoneSip";
-
+public class TitleFragment extends BaseFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -23,7 +22,7 @@ public class TitleFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_linphone_title, container, false);
+        View view = super.onCreateView(inflater, container, savedInstanceState);
 
         if (getArguments() != null) {
             String oldTitle = getArguments().getString("title", "Домофон");
@@ -39,19 +38,36 @@ public class TitleFragment extends Fragment {
 
             android.util.Log.d(TAG, "[UNLOCK] title: " + title);
 
-            getParentActivity().createWidget(title);
-        });
-
-        Button cButton = view.findViewById(R.id.config_unlock_cancel);
-
-        cButton.setOnClickListener((View v) -> {
-            getParentActivity().cancelCreate();
+            LinphoneUnlockActivity activity =  (LinphoneUnlockActivity) getParentActivity();
+            activity.createWidget(title);
         });
 
         return view;
     }
 
-    public LinphoneUnlockActivity getParentActivity() {
-        return (LinphoneUnlockActivity) getActivity();
+    protected int getLayoutId() {
+        return R.layout.fragment_linphone_title;
+    }
+
+    @Override
+    public View getCustomActionBarView(LayoutInflater inflater, int actionBarHeight) {
+        View header = inflater.inflate(R.layout.evo_default_header, null);
+
+        TextViewHeader headerText = header.findViewById(R.id.ec_headerTitle);
+        headerText.setText("Название для кнопки");
+
+        ImageView goBack = header.findViewById(R.id.ec_goBack);
+        goBack.setOnClickListener((View v) -> {
+            LinphoneUnlockActivity activity =  (LinphoneUnlockActivity) getParentActivity();
+
+            if (activity.edit) {
+                activity.cancelCreate();
+            } else {
+                activity.onBackPressed();
+            }
+
+        });
+
+        return header;
     }
 }

@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.app.Activity;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -24,11 +25,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import ru.simdev.evo.components.fragments.BaseFragment;
+import ru.simdev.evo.components.view.TextViewHeader;
 import ru.simdev.evo.video.R;
 
-public class DoorphoneFragment extends Fragment {
-    private static final String TAG = "LinphoneSip";
-
+public class DoorphoneFragment extends BaseFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,7 +37,7 @@ public class DoorphoneFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_linphone_doorphones, container, false);
+        View view = super.onCreateView(inflater, container, savedInstanceState);
 
         ArrayList<Doorphone> doorphones = getList();
 
@@ -52,7 +53,8 @@ public class DoorphoneFragment extends Fragment {
 
             listview.setOnItemClickListener((AdapterView<?> parent, final View v, int position, long id) -> {
                 android.util.Log.d(TAG, "[UNLOCK] click " + position);
-                getParentActivity().showTitleFragment((Doorphone) parent.getItemAtPosition(position));
+                LinphoneUnlockActivity activity =  (LinphoneUnlockActivity) getParentActivity();
+                activity.showTitleFragment((Doorphone) parent.getItemAtPosition(position));
             });
         } else {
             listview.setVisibility(View.GONE);
@@ -61,8 +63,8 @@ public class DoorphoneFragment extends Fragment {
         return view;
     }
 
-    public LinphoneUnlockActivity getParentActivity() {
-        return (LinphoneUnlockActivity) getActivity();
+    protected int getLayoutId() {
+        return R.layout.fragment_linphone_doorphones;
     }
 
     ArrayList<Doorphone> getList() {
@@ -101,5 +103,21 @@ public class DoorphoneFragment extends Fragment {
         }
 
         return data;
+    }
+
+    @Override
+    public View getCustomActionBarView(LayoutInflater inflater, int actionBarHeight) {
+        View header = inflater.inflate(R.layout.evo_default_header, null);
+
+        TextViewHeader headerText = header.findViewById(R.id.ec_headerTitle);
+        headerText.setText("Выбор домофона");
+
+        ImageView goBack = header.findViewById(R.id.ec_goBack);
+        goBack.setOnClickListener((View v) -> {
+            LinphoneUnlockActivity activity =  (LinphoneUnlockActivity) getParentActivity();
+            activity.cancelCreate();
+        });
+
+        return header;
     }
 }

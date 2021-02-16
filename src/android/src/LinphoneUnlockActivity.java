@@ -1,18 +1,9 @@
 package com.sip.linphone;
 
-import android.app.Activity;
 import android.appwidget.AppWidgetManager;
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
-import android.view.View;
-import android.view.Window;
-import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
-import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
 
@@ -20,30 +11,29 @@ import com.sip.linphone.fragments.DoorphoneFragment;
 import com.sip.linphone.fragments.TitleFragment;
 import com.sip.linphone.models.Doorphone;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.HashMap;
-import java.util.Map;
-
 import ru.simdev.evo.video.R;
-import ru.simdev.livetex.LivetexContext;
-import ru.simdev.livetex.fragments.InitFragment;
 import ru.simdev.livetex.fragments.OnlineChatFragment1;
-import ru.simdev.livetex.utils.BusProvider;
 
 public class LinphoneUnlockActivity extends FragmentActivity {
     private static final String TAG = "LinphoneSip";
     int mAppWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
 
+    public boolean edit = false;
+
     private String doorphone = "";
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+
         setContentView(R.layout.activity_linphone_unlock);
 
         final Intent intent = getIntent();
@@ -66,6 +56,8 @@ public class LinphoneUnlockActivity extends FragmentActivity {
         if (title.equals("")) {
             getSupportFragmentManager().beginTransaction().add(R.id.config_unlock_container, new DoorphoneFragment()).commit();
         } else {
+            edit = true;
+
             TitleFragment fragment = new TitleFragment();
 
             Bundle args = new Bundle();
@@ -81,7 +73,11 @@ public class LinphoneUnlockActivity extends FragmentActivity {
 
         android.util.Log.d(TAG, "[UNLOCK] click " + doorphone.id + (doorphone.doorId.equals("") ? "" : ":" + doorphone.doorId));
 
-        getSupportFragmentManager().beginTransaction().replace(R.id.config_unlock_container, new TitleFragment()).commit();
+        getSupportFragmentManager().beginTransaction().replace(R.id.config_unlock_container, new TitleFragment()).addToBackStack(getClass().getName()).commit();
+    }
+
+    public void showDoorphoneFragment() {
+        getSupportFragmentManager().beginTransaction().replace(R.id.config_unlock_container, new DoorphoneFragment()).addToBackStack(getClass().getName()).commit();
     }
 
     public void createWidget(String title) {

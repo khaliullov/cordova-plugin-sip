@@ -51,7 +51,7 @@ public class UnlockWidget extends AppWidgetProvider {
 
         LinphoneStorage storage = new LinphoneStorage(context);
         String title = storage.getUnlockTitle(appWidgetId);
-        title = title.equals("") ? "Домофон" : title;
+        title = title.equals("") ? "Мой домофон" : title;
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.unlock_widget);
 

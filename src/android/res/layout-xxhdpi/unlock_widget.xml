@@ -1,0 +1,33 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <Button
+            android:id="@+id/widget_unlock_button"
+            style="@style/EvoComponentWidgetButton"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:drawableStart="@drawable/btn_open"
+            android:paddingStart="30dp"
+            android:layout_gravity="center_horizontal"
+            />
+
+        <TextView
+            android:id="@+id/widget_unlock_label"
+            android:paddingTop="10dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#ffffff"
+            android:layout_gravity="center_horizontal"
+            android:textAlignment="center"
+            android:lineSpacingMultiplier="0.9"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+</RelativeLayout>

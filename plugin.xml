@@ -59,7 +59,6 @@
     <source-file src="src/android/res/layout/fragment_linphone_doorphones.xml" target-dir="res/layout" />
     <source-file src="src/android/res/layout/fragment_linphone_title.xml" target-dir="res/layout" />
     <source-file src="src/android/res/layout/item_linphone_doorphone.xml" target-dir="res/layout" />
-    <source-file src="src/android/res/layout/unlock_widget.xml" target-dir="res/layout" />
     <source-file src="src/android/res/xml/unlock_widget_info.xml" target-dir="res/xml" />
     <source-file src="src/android/res/raw/linphonerc_default" target-dir="res/raw" />
     <source-file src="src/android/res/raw/linphonerc_factory" target-dir="res/raw" />
@@ -67,6 +66,8 @@
     <source-file src="src/android/res/raw/ringback.wav" target-dir="res/raw" />
     <source-file src="src/android/res/raw/rootca.pem" target-dir="res/raw" />
     <source-file src="src/android/res/raw/oldphone_mono.wav" target-dir="res/raw" />
+    <source-file src="src/android/res/layout-nodpi/unlock_widget.xml" target-dir="res/layout-nodpi" />
+    <source-file src="src/android/res/layout-xxhdpi/unlock_widget.xml" target-dir="res/layout-xxhdpi" />
 
     <!-- drawable src/android/resources -->
     <resource-file src="src/android/res/anim/alpha.xml" target="res/anim/alpha.xml" />

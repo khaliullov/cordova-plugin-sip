@@ -2,35 +2,49 @@
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="match_parent">
 
-    android:padding="10dp">
-
-    <EditText
+    <LinearLayout
+        android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/config_unlock_title"
-        android:hint="Название"
-        android:maxLines="1"
-        android:paddingBottom="10dp"/>
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingBottom="70dp"
+        android:layout_centerVertical="true" >
 
-    <Button
-        android:id="@+id/config_unlock_cancel"
-        android:layout_width="140dp"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentStart="true"
-        android:text="Отмена">
+        <ru.simdev.evo.components.view.TextViewMontserrat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAlignment="center"
+            android:layout_gravity="center_horizontal"
+            android:text="Название"
+            android:textSize="@dimen/ec_header_title"
+            android:textColor="@color/ec_basetext"
+            android:padding="10dp"
+            android:paddingTop="20dp"/>
 
-    </Button>
+        <ru.simdev.evo.components.view.EditTextMontserratBold
+            android:id="@+id/config_unlock_title"
+            style="@style/EvoComponentEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:textColor="@color/ec_basetext"
+            android:textSize="@dimen/ec_header_title"
+            android:hint="Мой домофон"
+            android:background="@drawable/ec_underline"/>
 
-    <Button
+    </LinearLayout>
+
+    <ru.simdev.evo.components.view.ButtonMontserrat
         android:id="@+id/config_unlock_add"
-        android:layout_width="140dp"
-        android:layout_height="wrap_content"
+        style="@style/EvoComponentButton"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true"
-        android:text="Готово">
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="24dp"
+        android:text="Выбрать"
+        android:elevation="10dp">
 
-    </Button>
+    </ru.simdev.evo.components.view.ButtonMontserrat>
 </RelativeLayout>
