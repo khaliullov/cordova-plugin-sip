@@ -149,11 +149,7 @@ public class Linphone extends CordovaPlugin  {
             mLinphoneManager.login(username, password, domain);
             mLinphoneManager.saveAuth(username, password, domain);
 
-            LinphoneStorage mStorage = new LinphoneStorage(mContext);
-
-            if (mStorage.getForeground()) {
-                LinphoneContext.instance().runForegroundService();
-            }
+            LinphoneContext.instance().runForegroundService();
         });
     }
 

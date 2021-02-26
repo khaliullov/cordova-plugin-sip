@@ -56,6 +56,8 @@ public class LinphoneContext {
     private boolean mIsPush = false;
     private static boolean hasForeground = false;
 
+    private LinphoneStorage mStorage;
+
     public LinphoneMiniManager mLinphoneManager;
 
     public static boolean isReady() {
@@ -88,6 +90,8 @@ public class LinphoneContext {
 
         mLinphoneManager = new LinphoneMiniManager(context, isPush);
         mIsPush = isPush;
+
+        mStorage = new LinphoneStorage(context);
 
         if (!isPush) {
             runWorker();
@@ -141,7 +145,8 @@ public class LinphoneContext {
     }
 
     public void runForegroundService() {
-        if (!hasForeground) {
+        if (!hasForeground && mStorage.getForeground()) {
+            android.util.Log.e(TAG, "START FOREGROUND");
             Intent serviceIntent = new Intent(mContext, LinphoneForegroundService.class);
             serviceIntent.setAction(LinphoneForegroundService.ACTION_START_FOREGROUND_SERVICE);
             ContextCompat.startForegroundService(mContext, serviceIntent);
@@ -152,6 +157,7 @@ public class LinphoneContext {
 
     public void stopForegroundService() {
         if (hasForeground) {
+            android.util.Log.e(TAG, "STOP FOREGROUND");
             Intent serviceIntent = new Intent(mContext, LinphoneForegroundService.class);
             serviceIntent.setAction(LinphoneForegroundService.ACTION_STOP_FOREGROUND_SERVICE);
             ContextCompat.startForegroundService(mContext, serviceIntent);
@@ -163,9 +169,15 @@ public class LinphoneContext {
     public void showNotification() {
         NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
 
-        notificationManager.notify(NOTIFICATION_ID, isCall ? getCallNotification(mContext) : getServiceNotification(mContext, isConnected));
-        android.util.Log.d(TAG, "StateChanged " + (isCall ? "getCallNotification" : "getServiceNotification"));
+        if (isCall) {
+            notificationManager.notify(NOTIFICATION_ID, getCallNotification(mContext));
+        } else if (hasForeground) {
+            notificationManager.notify(NOTIFICATION_ID, getServiceNotification(mContext, isConnected));
+        } else {
+            notificationManager.cancel(NOTIFICATION_ID);
+        }
 
+        android.util.Log.d(TAG, "StateChanged " + (isCall ? "getCallNotification" : "getServiceNotification"));
     }
 
     public static Notification getServiceNotification(Context context, boolean connected) {

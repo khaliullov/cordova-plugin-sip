@@ -22,6 +22,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 
 import ru.simdev.evo.video.R;
@@ -90,6 +91,8 @@ public class UnlockWidget extends AppWidgetProvider {
 
             if (!unlockUrl.equals("")) {
                 new AsyncDoorOpenRequest(context).execute(unlockUrl);
+            } else {
+                Toast.makeText(context, "Домофон не найден", Toast.LENGTH_SHORT).show();
             }
         }
 

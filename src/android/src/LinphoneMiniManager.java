@@ -141,7 +141,11 @@ public class LinphoneMiniManager implements CoreListener {
                 copyAssetsFromPackage(basePath);
             }
 
-            mCore = Factory.instance().createCore(mPrefs.getLinphoneDefaultConfig(), mPrefs.getLinphoneFactoryConfig(), mContext);
+            try {
+                mCore = Factory.instance().createCore(mPrefs.getLinphoneDefaultConfig(), mPrefs.getLinphoneFactoryConfig(), mContext);
+            } catch (RuntimeException e) {
+                android.util.Log.w(TAG, e.getMessage());
+            }
 
             mCore.addListener(this);
 
@@ -756,13 +760,13 @@ public class LinphoneMiniManager implements CoreListener {
             JSONArray contacts = new JSONArray(jsonContacts);
 
             for (int i = 0; i < contacts.length(); i++) {
-                JSONObject contact = (JSONObject) contacts.getJSONObject(i);
+                JSONObject contact = contacts.getJSONObject(i);
 
                 if (contact.has("id") && contact.has("sip_name") && contact.has("door_open_url")) {
                     String key = "door_open_url_" + contact.getString("id");
                     android.util.Log.d(TAG, "[refreshUrls] key " + key);
 
-                    if (data.containsKey(key)) {
+                    if (data.containsKey(key) && !data.get(key).equals("")) {
                         android.util.Log.d(TAG, "[refreshUrls] url " + data.get(key));
                         contact.put("door_open_url", data.get(key));
 

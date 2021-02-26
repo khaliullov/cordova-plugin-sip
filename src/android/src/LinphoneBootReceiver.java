@@ -24,11 +24,7 @@ public class LinphoneBootReceiver extends BroadcastReceiver {
                 if (LinphoneContext.instance().mLinphoneManager.loginFromStorage()) {
                     LinphoneContext.instance().mLinphoneManager.mPrefs.setPushNotificationEnabled(true);
 
-                    LinphoneStorage mStorage = new LinphoneStorage(context);
-
-                    if (mStorage.getForeground()) {
-                        LinphoneContext.instance().runForegroundService();
-                    }
+                    LinphoneContext.instance().runForegroundService();
                 } else {
                     LinphoneContext.instance().mLinphoneManager.mCore.refreshRegisters();
                 }
@@ -37,11 +33,7 @@ public class LinphoneBootReceiver extends BroadcastReceiver {
             if (LinphoneContext.instance() != null) {
                 LinphoneContext.instance().stopForegroundService();
 
-                LinphoneStorage mStorage = new LinphoneStorage(context);
-
-                if (mStorage.getForeground()) {
-                    LinphoneContext.instance().runForegroundService();
-                }
+                LinphoneContext.instance().runForegroundService();
             }
         }
     }
