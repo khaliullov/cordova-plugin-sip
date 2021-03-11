@@ -7,6 +7,7 @@ import android.content.Context;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.preference.PreferenceManager;
 import android.widget.RemoteViews;
@@ -75,6 +76,9 @@ public class UnlockWidget extends AppWidgetProvider {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent.getAction() == "open") {
+            MediaPlayer mp = MediaPlayer.create(context, R.raw.oldphone_mono);
+            mp.start();
+
             int widgetId = intent.getIntExtra("widgetID", 0);
             LinphoneStorage storage = new LinphoneStorage(context);
             String doorphone = storage.getUnlockId(widgetId);

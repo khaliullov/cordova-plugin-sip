@@ -6,15 +6,20 @@ import android.net.sip.SipAudioCall;
 import android.net.sip.SipManager;
 import android.net.sip.SipProfile;
 
+import com.sip.linphone.models.Sipauth;
+
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.linphone.core.Core;
 import org.linphone.mediastream.Log;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Timer;
 
 public class Linphone extends CordovaPlugin  {
@@ -71,6 +76,10 @@ public class Linphone extends CordovaPlugin  {
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext)
             throws JSONException {
         switch (action) {
+            case "jsonLogin":
+                android.util.Log.d("CORE","LOGIN IN");
+                jsonLogin(args.getString(0), callbackContext);
+                return true;
             case "login":
                 android.util.Log.d("CORE","LOGIN IN");
                 login(args.getString(0), args.getString(1), args.getString(2), callbackContext);
@@ -130,7 +139,7 @@ public class Linphone extends CordovaPlugin  {
         return false;
     }
 
-    public void login(final String username, final String password, final String domain, final CallbackContext callbackContext) {
+    public void jsonLogin(final String jsonData, final CallbackContext callbackContext) {
         if (!cordova.hasPermission(Manifest.permission.RECORD_AUDIO)) {
             cordova.requestPermission(this, RC_MIC_PERM, Manifest.permission.RECORD_AUDIO);
         }
@@ -145,9 +154,60 @@ public class Linphone extends CordovaPlugin  {
 
         cordova.getThreadPool().execute(() -> {
             mLinphoneManager.listenLogin(callbackContext);
-            mLinphoneManager.clearRegistration();
-            mLinphoneManager.login(username, password, domain);
-            mLinphoneManager.saveAuth(username, password, domain);
+
+            HashSet<Sipauth> authList = new HashSet();
+
+            android.util.Log.d(TAG, "json auth " + jsonData);
+
+            try {
+                JSONArray data = new JSONArray(jsonData);
+
+                for (int i = 0; i < data.length(); i++) {
+                    JSONObject entry = (JSONObject) data.get(i);
+
+                    Sipauth auth = new Sipauth();
+                    auth.username = entry.has("username") ? entry.getString("username") : "";
+                    auth.password = entry.has("password") ? entry.getString("password") : "";
+                    auth.domain = entry.has("domain") ? entry.getString("domain") : "";
+
+                    authList.add(auth);
+                }
+            } catch (JSONException e) {
+
+            }
+
+            mLinphoneManager.login(authList);
+            mLinphoneManager.saveAuth(authList);
+
+            LinphoneContext.instance().runForegroundService();
+        });
+    }
+
+    public void login(final String username, final String password, final String domain, final CallbackContext callbackContext) {
+        if (!cordova.hasPermission(Manifest.permission.RECORD_AUDIO)) {
+            cordova.requestPermission(this, RC_MIC_PERM, Manifest.permission.RECORD_AUDIO);
+        }
+
+        if (powerManager) {
+            android.util.Log.d(TAG, "SHOW DIAOL");
+            LinphoneDeviceUtils.displayDialogIfDeviceHasPowerManagerThatCouldPreventPushNotifications(cordova.getActivity());
+            powerManager = false;
+        }
+
+        LinphoneContext.instance().checkPermission();
+
+        cordova.getThreadPool().execute(() -> {
+            Sipauth login = new Sipauth();
+            login.password = password;
+            login.username = username;
+            login.domain = domain;
+
+            HashSet loginSet = new HashSet<Sipauth>();
+            loginSet.add(login);
+
+            mLinphoneManager.listenLogin(callbackContext);
+            mLinphoneManager.login(loginSet);
+            mLinphoneManager.saveAuth(loginSet);
 
             LinphoneContext.instance().runForegroundService();
         });
@@ -173,8 +233,9 @@ public class Linphone extends CordovaPlugin  {
     public static synchronized void logout(final CallbackContext callbackContext) {
         try{
             Log.d("logout");
+            HashSet<Sipauth> authList = new HashSet();
             mLinphoneManager.logout();
-            mLinphoneManager.saveAuth("", "", "");
+            mLinphoneManager.saveAuth(authList);
             mLinphoneManager.saveStunServer("");
             LinphoneContext.instance().stopForegroundService();
             LinphoneStorage mStorage = new LinphoneStorage(mContext);

@@ -49,7 +49,8 @@
     <source-file src="src/android/src/adapters/DoorphoneArrayAdapter.java" target-dir="src/com/sip/linphone/adapters" />
     <source-file src="src/android/src/fragments/TitleFragment.java" target-dir="src/com/sip/linphone/fragments" />
     <source-file src="src/android/src/fragments/DoorphoneFragment.java" target-dir="src/com/sip/linphone/fragments" />
-    <source-file src="src/android/src/models/Doorphone.java" target-dir="src/com/sip/linphone/models" />	
+    <source-file src="src/android/src/models/Doorphone.java" target-dir="src/com/sip/linphone/models" />
+    <source-file src="src/android/src/models/Sipauth.java" target-dir="src/com/sip/linphone/models" />
     <source-file src="src/android/res/layout-land/incall.xml" target-dir="res/layout-land" />
     <source-file src="src/android/res/layout-port/incall.xml" target-dir="res/layout-port" />
     <source-file src="src/android/res/layout-sw600dp/incall.xml" target-dir="res/layout-sw600dp" />    

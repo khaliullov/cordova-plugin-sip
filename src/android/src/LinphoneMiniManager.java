@@ -24,16 +24,13 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.media.AudioManager;
-import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Vibrator;
 import android.preference.PreferenceManager;
-import android.provider.Settings;
 
 import androidx.annotation.NonNull;
 
@@ -41,6 +38,7 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
+import com.sip.linphone.models.Sipauth;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
@@ -82,10 +80,11 @@ import org.linphone.mediastream.video.capture.hwconf.AndroidCameraConfiguration;
 import org.linphone.mediastream.video.capture.hwconf.AndroidCameraConfiguration.AndroidCamera;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -565,14 +564,14 @@ public class LinphoneMiniManager implements CoreListener {
     }
 
     public boolean loginFromStorage() {
-        String username = mStorage.getUsername();
+        Set<Sipauth> authList = mStorage.getAuth();
 
-        android.util.Log.i(TAG, "[Mini manager] login from storage " + username);
+        android.util.Log.i(TAG, "[Mini manager] login from storage accounts " + authList.size());
 
-        if (username != "") {
+        if (authList.size() > 0) {
             android.util.Log.i(TAG, "[Mini manager] logining from storage");
 
-            login(username, mStorage.getPassword(), mStorage.getDomain());
+            login(authList);
 
             String stun = mStorage.getStun();
 
@@ -586,11 +585,7 @@ public class LinphoneMiniManager implements CoreListener {
         return false;
     }
 
-    public void saveAuth(String username, String password, String domain) {
-        mStorage.setUsername(username);
-        mStorage.setPassword(password);
-        mStorage.setDomain(domain);
-    }
+    public void saveAuth(Set<Sipauth> auth) { mStorage.setAuth(auth); }
 
     public void saveStunServer(String stun) {
         mStorage.setStun(stun);
@@ -601,7 +596,7 @@ public class LinphoneMiniManager implements CoreListener {
         mCore.clearProxyConfig();
     }
 
-    public void login(String username, String password, String domain) {
+    public void login(Set<Sipauth> authList) {
         clearRegistration();
 
         Factory lcFactory = Factory.instance();
@@ -612,37 +607,54 @@ public class LinphoneMiniManager implements CoreListener {
         transports.setTlsPort(RANDOM_PORT);
         mCore.setTransports(transports);
 
-        android.util.Log.d(TAG, "auth full: " + username + " " + password + " " + domain);
+        Iterator<Sipauth> itr = authList.iterator();
 
-        Address address = lcFactory.createAddress("sip:" + username);
+        while (itr.hasNext()) {
+            Sipauth auth = itr.next();
 
-        Address proxyAddress = lcFactory.createAddress("sip:" + domain);
+            if (auth.username.equals("") || auth.password.equals("") || auth.domain.equals("")) {
+                continue;
+            }
 
-        Integer port = proxyAddress.getPort();
+            android.util.Log.d(TAG, "auth full: " + auth.username + " " + auth.password + " " + auth.domain);
 
-        android.util.Log.d(TAG, "proxyAddress: " + proxyAddress.asStringUriOnly());
+            Address address = lcFactory.createAddress("sip:" + auth.username);
 
-        if (password != null) {
-            mCore.addAuthInfo(lcFactory.createAuthInfo(address.getUsername(), address.getUsername(), password, (String) null, (String) null, address.getDomain()));
+            Address proxyAddress = lcFactory.createAddress("sip:" + auth.domain);
+
+            Integer port = proxyAddress.getPort();
+
+            android.util.Log.d(TAG, "proxyAddress: " + proxyAddress.asStringUriOnly());
+
+            if (address != null && auth.password != null) {
+                mCore.addAuthInfo(lcFactory.createAuthInfo(address.getUsername(), address.getUsername(), auth.password, (String) null, (String) null, address.getDomain()));
+                android.util.Log.d(TAG, "auth: " + address.getUsername() + " " + auth.password + " " + address.getDomain());
+
+                if (proxyAddress != null) {
+                    ProxyConfig proxyCfg = mCore.createProxyConfig();
+                    proxyCfg.edit();
+                    proxyCfg.setIdentityAddress(address);
+                    proxyCfg.setServerAddr(proxyAddress.asStringUriOnly());
+
+                    if (port != 0) {
+                        proxyCfg.setRoute(proxyAddress.getDomain() + ':' + port);
+                    }
+
+                    android.util.Log.d(TAG, "auth proxy: " + proxyAddress.asStringUriOnly());
+
+                    proxyCfg.enableRegister(true);
+                    proxyCfg.setExpires(86400 * 30);
+                    proxyCfg.done();
+
+                    mCore.addProxyConfig(proxyCfg);
+                    mCore.setDefaultProxyConfig(proxyCfg);
+                }
+            } else {
+                if (mLoginCallbackContext != null) {
+                    mLoginCallbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, "RegistrationFailed::AUTH"));
+                }
+            }
         }
-
-        ProxyConfig proxyCfg = mCore.createProxyConfig();
-        proxyCfg.edit();
-        proxyCfg.setIdentityAddress(address);
-        proxyCfg.setServerAddr(proxyAddress.asStringUriOnly());
-
-        if (port != 0) {
-            proxyCfg.setRoute(proxyAddress.getDomain() + ':' + port);
-        }
-
-        android.util.Log.d(TAG, "auth: " + address.getUsername() + " " + password + " " + address.getDomain() + " - " + proxyAddress.asStringUriOnly());
-
-        proxyCfg.enableRegister(true);
-        proxyCfg.setExpires(86400 * 30);
-        proxyCfg.done();
-
-        mCore.addProxyConfig(proxyCfg);
-        mCore.setDefaultProxyConfig(proxyCfg);
 
         flToken = true;
 

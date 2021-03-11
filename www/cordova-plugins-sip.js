@@ -18,6 +18,15 @@ module.exports =
             [username, password, domain]
         );
     },
+    jsonLogin: function (authList, successCallback, errorCallback) {
+        cordova.exec(
+            successCallback,
+            errorCallback,
+            "Linphone",
+            "jsonLogin",
+            [authList]
+        );
+    },
     setPushNotification: function (appId, regId, successCallback, errorCallback) {
         cordova.exec(
             successCallback,
