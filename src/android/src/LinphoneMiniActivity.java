@@ -417,7 +417,7 @@ public class LinphoneMiniActivity extends Activity {
         };
 
         closeTimer = new Timer("Close scheduler");
-        closeTimer.schedule(lTask, 1000);
+        closeTimer.schedule(lTask, 3000);
     }
 
     @Override
